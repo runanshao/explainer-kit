@@ -1,7 +1,9 @@
 /** Film pack: cue-driven shots, camera moves, colour grade, grain, letterbox, documentary titles, paper and stamps. */
 import React from 'react';
-import {Easing, interpolate, staticFile, useCurrentFrame} from 'remotion';
+import {interpolate, staticFile, useCurrentFrame} from 'remotion';
 import {FPS, HEIGHT} from '../config';
+import {drift, eio, rng} from '../core/motion';
+import {useSpoken} from '../core/Spoken';
 import {C, FONT} from '../core/theme';
 import {ease, lerp} from '../core/timeline';
 
@@ -9,70 +11,9 @@ import {ease, lerp} from '../core/timeline';
 export const BAR = Math.round(HEIGHT / 11.25);
 export const MID_Y = HEIGHT / 2;
 
-export const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-const INOUT = Easing.bezier(0.45, 0, 0.25, 1);
-/** ease-in-out 0→1 from frame `a` over `dur` frames (camera moves, crossfades) */
-export const eio = (t: number, a: number, dur = 18) =>
-  interpolate(t, [a, a + dur], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: INOUT});
-/** linear 0→1 between frames a and b */
-export const lin = (t: number, a: number, b: number) => clamp01((t - a) / Math.max(1, b - a));
-
-/** deterministic PRNG (same frame → same picture, which rendering in parallel requires) */
-export const rng = (seed: number) => {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-
-// ───────────────────────── shots ─────────────────────────
-
-export type Tr = 'fade' | 'cut' | 'black' | 'flash' | 'slow';
-export type Shot = {at: number; tr?: Tr; el: (t: number, d: number) => React.ReactNode};
-
-/**
- * A scene is a list of shots that cut on narration cues. Each shot renders with its own local time `t`
- * and its full length `d`, so every shot can carry its own camera move.
- */
-export const Shots: React.FC<{shots: Shot[]; end: number}> = ({shots, end}) => {
-  const f = useCurrentFrame();
-  const list = [...shots].sort((a, b) => a.at - b.at);
-  let i = 0;
-  for (let k = 0; k < list.length; k++) if (f >= list[k].at) i = k;
-  const cur = list[i];
-  const nextAt = (k: number) => (k + 1 < list.length ? list[k + 1].at : end);
-  const d = Math.max(1, nextAt(i) - cur.at);
-  const t = f - cur.at;
-  const tr = cur.tr ?? 'fade';
-  const FADE = tr === 'slow' ? 26 : 12;
-  const prev = i > 0 ? list[i - 1] : null;
-  const layers: React.ReactNode[] = [];
-  if (prev && (tr === 'fade' || tr === 'slow') && t < FADE) {
-    const pd = Math.max(1, cur.at - prev.at);
-    layers.push(
-      <div key={`p${i}`} style={{position: 'absolute', inset: 0}}>
-        {prev.el(f - prev.at, pd)}
-      </div>,
-    );
-  }
-  const op = tr === 'fade' || tr === 'slow' ? (i === 0 ? 1 : eio(t, 0, FADE)) : tr === 'black' ? ease(t, 4, 12) : 1;
-  layers.push(
-    <div key={`c${i}`} style={{position: 'absolute', inset: 0, opacity: op}}>
-      {cur.el(t, d)}
-    </div>,
-  );
-  const flash = tr === 'flash' ? interpolate(t, [0, 2, 12], [0, 0.85, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) : 0;
-  return (
-    <div style={{position: 'absolute', inset: 0, background: C.black, overflow: 'hidden'}}>
-      {layers}
-      {flash > 0 ? <div style={{position: 'absolute', inset: 0, background: '#fff6e6', opacity: flash}} /> : null}
-    </div>
-  );
-};
+// Shared with every pack; re-exported so film scenes can keep importing them from here.
+export {Shots, type Shot, type Tr} from '../core/shots';
+export {clamp01, eio, lin, rng} from '../core/motion';
 
 /** Slow camera move across a shot: zoom and drift, eased in-out over the whole shot. */
 export const Cam: React.FC<{
@@ -83,16 +24,19 @@ export const Cam: React.FC<{
   y?: [number, number];
   ox?: number;
   oy?: number;
+  /** handheld sway in px (0 = locked-off tripod) */
+  hand?: number;
   children: React.ReactNode;
-}> = ({t, d, z = [1, 1.06], x = [0, 0], y = [0, 0], ox = 50, oy = 50, children}) => {
+}> = ({t, d, z = [1, 1.06], x = [0, 0], y = [0, 0], ox = 50, oy = 50, hand = 0, children}) => {
   const p = eio(t, 0, Math.max(30, d + 20));
+  const f = useCurrentFrame();
   return (
     <div
       style={{
         position: 'absolute',
         inset: 0,
         transformOrigin: `${ox}% ${oy}%`,
-        transform: `translate(${lerp(p, x[0], x[1])}px, ${lerp(p, y[0], y[1])}px) scale(${lerp(p, z[0], z[1])})`,
+        transform: `translate(${lerp(p, x[0], x[1])}px, ${lerp(p, y[0], y[1])}px) scale(${lerp(p, z[0], z[1])})${hand ? ` ${drift(f, 7, hand, hand * 0.04, 0.02)}` : ''}`,
       }}
     >
       {children}
@@ -274,8 +218,12 @@ export const Line: React.FC<{t: number; at?: number; text: React.ReactNode; size
   );
 };
 
-/** Quote revealed character by character, big serif with corner brackets. Use "\n" for line breaks. */
-export const BigQuote: React.FC<{t: number; at?: number; text: string; who?: string; cps?: number; size?: number; color?: string; y?: number}> = ({
+/**
+ * Quote revealed character by character, big serif with corner brackets. Use "\n" for line breaks.
+ * With `spoken`, each character appears exactly when the narrator (or the quote voice) says it,
+ * instead of at a fixed `cps` — the text must then match the narration.
+ */
+export const BigQuote: React.FC<{t: number; at?: number; text: string; who?: string; cps?: number; size?: number; color?: string; y?: number; spoken?: boolean}> = ({
   t,
   at = 0,
   text,
@@ -284,10 +232,19 @@ export const BigQuote: React.FC<{t: number; at?: number; text: string; who?: str
   size = 86,
   color = C.ink,
   y = MID_Y,
+  spoken,
 }) => {
-  const n = Math.max(0, Math.floor(((t - at) / FPS) * cps));
+  const f = useCurrentFrame();
+  const {chars} = useSpoken();
   const flat = text.replace(/\n/g, '');
-  const done = n >= flat.length;
+  // shown[i]: 0..1 visibility of character i
+  const spokenAt = spoken ? chars(text) : null;
+  const shown = flat.split('').map((_, i) =>
+    spokenAt ? ease(f, spokenAt[i] - 2, 8) : i < Math.floor(((t - at) / FPS) * cps) ? 1 : 0,
+  );
+  const done = shown[shown.length - 1] >= 1;
+  // the opening bracket shows up front, so the frame isn't empty while the narrator leads into the quote
+  const first = ease(t, at - 6, 10);
   let k = 0;
   const rows = text.split('\n');
   return (
@@ -295,11 +252,12 @@ export const BigQuote: React.FC<{t: number; at?: number; text: string; who?: str
       <div style={{fontSize: size, fontWeight: 800, color, lineHeight: 1.45, letterSpacing: 6}}>
         {rows.map((row, ri) => (
           <div key={ri}>
-            {ri === 0 ? <span style={{color: C.gold, opacity: ease(t, at - 6, 10)}}>「</span> : null}
+            {ri === 0 ? <span style={{color: C.gold, opacity: first}}>「</span> : null}
             {row.split('').map((ch) => {
               const i = k++;
+              const v = shown[i];
               return (
-                <span key={i} style={{opacity: i < n ? 1 : 0, filter: i < n ? 'none' : 'blur(6px)'}}>
+                <span key={i} style={{display: 'inline-block', opacity: v, filter: v < 1 ? `blur(${(1 - v) * 8}px)` : 'none', transform: `translateY(${(1 - v) * 0.18}em)`}}>
                   {ch}
                 </span>
               );

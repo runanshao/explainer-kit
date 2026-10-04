@@ -25,6 +25,12 @@ export type SubtitleStyle = {
   color?: string;
   /** lines read by an alternate voice (<<key|...>>) are set in serif, this colour, with 「」 */
   quoteColor?: string;
+  /** background of the pill when `box` is set */
+  boxColor?: string;
+  /** opacity of not-yet-spoken characters in karaoke mode */
+  dim?: number;
+  /** don't subtitle alternate-voice lines (when the scene already shows the quote big on screen) */
+  hideQuotes?: boolean;
 };
 
 export type Look = {
@@ -41,4 +47,9 @@ export type Look = {
   base?: string;
 };
 
-export type SceneDef = {component: React.FC; look?: Look};
+export type SceneDef = {
+  component: React.FC;
+  look?: Look;
+  /** per-scene tweaks merged over the look's subtitle style */
+  subtitles?: Partial<SubtitleStyle>;
+};

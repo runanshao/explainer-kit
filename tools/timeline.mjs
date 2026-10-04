@@ -28,11 +28,14 @@ export const cueFrame = (id, cue) => {
   return leadOf(id) + Math.round(v * FPS);
 };
 
-/** bundle once and select the composition named in kit.config.json */
-export const open = async () => {
+/** REMOTION_BROWSER=/path/to/chrome-headless-shell uses a local browser instead of Remotion's download */
+export const browserExecutable = process.env.REMOTION_BROWSER || null;
+
+/** bundle once and select the composition named in kit.config.json (or `id`) */
+export const open = async (id = CFG.id, inputProps = {}) => {
   const {bundle} = await import('@remotion/bundler');
   const {selectComposition} = await import('@remotion/renderer');
   const serveUrl = await bundle({entryPoint: path.join(root, 'src/index.ts')});
-  const composition = await selectComposition({serveUrl, id: CFG.id});
+  const composition = await selectComposition({serveUrl, id, inputProps, browserExecutable});
   return {serveUrl, composition};
 };

@@ -1,6 +1,6 @@
 /** s01 · film pack demo: shots cut on cues, a stamp lands on a spoken word, a quote in the alternate voice. */
 import React from 'react';
-import {Svg, ease, useScene} from '../core';
+import {Spoken, Svg, ease, shake, useScene} from '../core';
 import {C, FONT} from '../core/theme';
 import {BigQuote, Cam, Count, Desk, Doc, Glow, Graded, Line, MID_Y, Place, Shots, Sky, Stamp, Tag, Void} from '../film';
 
@@ -50,30 +50,35 @@ export const S01: React.FC = () => {
     },
     {
       at: c('old'),
+      // the new document pushes the old one off the desk instead of dissolving through it
+      tr: 'push' as const,
       el: (t: number, d: number) => (
         <Graded grade="warm">
-          <Cam t={t} d={d} z={[1.0, 1.08]}>
-            <Desk lx={45} />
-            <Doc
-              t={t}
-              x={460}
-              y={190}
-              w={1000}
-              rot={1.5}
-              kicker="手动时间表"
-              title="动画 · 入场时间"
-              size={32}
-              rows={['标题入场', '图表生长', '引语出现', '结尾定格'].map((k, i) => ({
-                k,
-                v: `00:${String(3 + i * 4).padStart(2, '0')}.${(i * 37) % 100}`,
-                at: 6 + i * 6,
-                // once the narration says 改一句, every hand-timed row is wrong
-                strike: t >= rel('改一句', 'old') + 8 + i * 4,
-              }))}
-            />
-          </Cam>
-          {/* rel(): frames from the cue to a spoken word — exactly the shot-local time t */}
-          <Stamp t={t} at={rel('重新对一遍', 'old')} text="全部返工" x={1180} y={610} rot={-10} size={66} />
+          {/* the stamp lands hard enough to shake the camera */}
+          <div style={{position: 'absolute', inset: 0, transform: shake(t, rel('重新对一遍', 'old'), 14)}}>
+            <Cam t={t} d={d} z={[1.0, 1.08]} hand={4}>
+              <Desk lx={45} />
+              <Doc
+                t={t}
+                x={460}
+                y={190}
+                w={1000}
+                rot={1.5}
+                kicker="手动时间表"
+                title="动画 · 入场时间"
+                size={32}
+                rows={['标题入场', '图表生长', '引语出现', '结尾定格'].map((k, i) => ({
+                  k,
+                  v: `00:${String(3 + i * 4).padStart(2, '0')}.${(i * 37) % 100}`,
+                  at: 6 + i * 6,
+                  // once the narration says 改一句, a pen crosses out every hand-timed row, one after another
+                  strike: rel('改一句', 'old') + 8 + i * 5,
+                }))}
+              />
+            </Cam>
+            {/* rel(): frames from the cue to a spoken word — exactly the shot-local time t */}
+            <Stamp t={t} at={rel('重新对一遍', 'old')} text="全部返工" x={1180} y={610} rot={-10} size={66} />
+          </div>
         </Graded>
       ),
     },
@@ -85,7 +90,8 @@ export const S01: React.FC = () => {
           <Cam t={t} d={d} z={[1.0, 1.06]} oy={70}>
             <Dusk t={t} />
           </Cam>
-          <Line t={t} at={rel('让旁白', 'idea')} text="让旁白自己当时间轴" size={88} y={MID_Y - 20} sub="narration is the timeline" />
+          {/* Spoken: each character lands as the narrator says it */}
+          <Line t={t} at={rel('让旁白', 'idea') - 4} dur={10} text={<Spoken text="让旁白自己当时间轴" mode="blur" />} size={88} y={MID_Y - 20} sub="narration is the timeline" />
         </Graded>
       ),
     },
@@ -117,10 +123,13 @@ export const S01: React.FC = () => {
     {
       at: c('quote'),
       tr: 'black' as const,
-      el: (t: number) => (
+      el: (t: number, d: number) => (
         <>
-          <Void tint="rgba(255,190,120,0.08)" />
-          <BigQuote t={t} at={rel('别对齐', 'quote')} text={'别对齐画面，\n对齐声音。'} who="一位剪辑师" cps={4} size={84} />
+          <Cam t={t} d={d} z={[1.0, 1.1]} oy={35}>
+            <Void tint="rgba(255,190,120,0.1)" />
+          </Cam>
+          {/* spoken: characters follow the quote voice; the bracket and attribution fill the lead-in */}
+          <BigQuote t={t} at={6} spoken text={'别对齐画面，\n对齐声音。'} who="一位剪辑师" size={84} />
         </>
       ),
     },
@@ -134,7 +143,7 @@ export const S01: React.FC = () => {
             <Cam t={t} d={d} z={[1.08, 1.0]} oy={60}>
               <Dusk t={t + 400} />
             </Cam>
-            <Line t={t} at={rel('这个词', 'ask')} text="这个词，第几帧出现？" size={72} y={400} />
+            <Line t={t} at={rel('这个词', 'ask') - 4} dur={10} text={<Spoken text="这个词，第几帧出现？" mode="rise" />} size={72} y={400} />
             <div
               style={{
                 position: 'absolute',

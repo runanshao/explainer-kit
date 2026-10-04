@@ -11,6 +11,7 @@
     "fonts": "node tools/fonts.mjs",
     "stills": "node tools/stills.mjs",
     "pick": "node tools/pick.mjs",
+    "strip": "node tools/strip.mjs",
     "sheet": "python tools/sheet.py",
     "music": "python tools/music.py",
     "mix": "python tools/mix.py",

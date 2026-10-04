@@ -51,12 +51,14 @@ const Subtitles: React.FC<{id: string; s: SubtitleStyle}> = ({id, s}) => {
   const f = useCurrentFrame();
   const t = (f - leadOf(id)) / FPS;
   const line = TIMINGS[id].lines.find((l) => t >= l.start && t < l.end);
-  if (!line) return null;
+  if (!line || (line.q && s.hideQuotes)) return null;
   const text = line.text.replace(/[，。；：、,.;:]$/, '').trimEnd();
   const q = Boolean(line.q);
   const op =
     interpolate(t - line.start, [0, 0.1], [0, 1], {extrapolateRight: 'clamp'}) *
     interpolate(line.end - t, [0, 0.08], [0, 1], {extrapolateRight: 'clamp'});
+  // a new line settles up into place instead of popping
+  const rise = interpolate(t - line.start, [0, 0.18], [8, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const color = q ? (s.quoteColor ?? C.gold) : (s.color ?? 'rgba(242,237,228,0.94)');
   let body: React.ReactNode = text;
   if (s.karaoke) {
@@ -68,7 +70,7 @@ const Subtitles: React.FC<{id: string; s: SubtitleStyle}> = ({id, s}) => {
       at[i] = wd ? (last = wd.t) : last;
     }
     body = text.split('').map((ch, i) => (
-      <span key={i} style={{opacity: t >= at[i] ? 1 : 0.45}}>
+      <span key={i} style={{opacity: t >= at[i] ? 1 : (s.dim ?? 0.45)}}>
         {ch}
       </span>
     ));
@@ -95,7 +97,8 @@ const Subtitles: React.FC<{id: string; s: SubtitleStyle}> = ({id, s}) => {
           letterSpacing: 2,
           whiteSpace: 'pre',
           color,
-          ...(s.box ? {padding: '10px 30px', borderRadius: 14, background: 'rgba(3,10,10,0.62)'} : null),
+          transform: `translateY(${rise}px)`,
+          ...(s.box ? {padding: '10px 30px', borderRadius: 14, background: s.boxColor ?? 'rgba(3,10,10,0.62)'} : null),
         }}
       >
         {q ? '「' : null}
@@ -136,7 +139,7 @@ const SceneShell: React.FC<{id: string}> = ({id}) => {
         <Audio src={staticFile(audioOf(id))} />
       </Sequence>
       {Frame ? <Frame /> : null}
-      <Subtitles id={id} s={look.subtitles ?? DEFAULT_SUBS} />
+      <Subtitles id={id} s={{...(look.subtitles ?? DEFAULT_SUBS), ...def?.subtitles}} />
     </SceneProvider>
   );
 };

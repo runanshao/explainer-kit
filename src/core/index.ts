@@ -1,6 +1,9 @@
 export * from './timeline';
+export * from './motion';
 export * from './layout';
 export * from './theme';
 export * from './look';
+export {Shots, type Shot, type Tr} from './shots';
+export {Spoken, useSpoken, type SpokenMode} from './Spoken';
 export {Tex} from './Tex';
 export {CFG, FPS, WIDTH, HEIGHT} from '../config';
