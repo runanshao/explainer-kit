@@ -2,7 +2,7 @@
 
 用 Remotion 做讲解视频的模板。旁白写在 `tts/script.json` 里，用 `[[cue]]` 标出动画触发点；edge-tts 合成语音时记下每个词的出口时间，生成 `src/timings.json`。场景代码只问「这个 cue 在第几帧」「这个词在第几帧」，不写死任何秒数，所以改旁白、重跑语音之后，动画和字幕自动跟上。
 
-仓库自带一支约 2 分钟的演示片（5 场），每场换一套风格包：`film`（电影）、`slides`（幻灯片 + KaTeX 公式）、`paper`（手绘笔记）、`neon`（霓虹终端）、`editorial`（杂志排版）。演示片的时间轴和音频是用 `--mock` 生成的静音占位，克隆下来不用联网合成就能预览。
+仓库自带一支约 3 分钟的演示片（9 场），每场换一套风格包：`film`（电影）、`slides`（幻灯片 + KaTeX 公式）、`paper`（手绘笔记）、`neon`（霓虹终端）、`editorial`（杂志排版）、`math`（数学推导）、`keynote`（发布会）、`pixel`（像素游戏）、`ink`（水墨）。演示片的时间轴和音频是用 `--mock` 生成的静音占位，克隆下来不用联网合成就能预览。
 
 ## 快速开始
 
@@ -34,6 +34,10 @@ python tts/gen.py                   # 真 edge-tts，需要联网和 ffmpeg；�
 | `src/paper/` | 手绘笔记风格包（可删） |
 | `src/neon/` | 霓虹终端风格包（可删） |
 | `src/editorial/` | 杂志排版风格包（可删） |
+| `src/math/` | 数学推导风格包（可删） |
+| `src/keynote/` | 发布会风格包（可删） |
+| `src/pixel/` | 像素游戏风格包（可删） |
+| `src/ink/` | 水墨风格包（可删） |
 | `src/scenes/` | 你的场景；`index.ts` 是登记表 |
 | `tools/` | 审图、拼图、配乐、混音、下载字体 |
 | `public/fx/` | 胶片颗粒和纸张纹理 |
@@ -132,8 +136,18 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 | `zoom` | 旧镜头冲过镜头，新镜头落定 |
 | `wipe` | 带亮边的划像 |
 | `whip` | 快速甩镜，带运动模糊 |
+| `iris` | 新镜头从画面中心的圆里打开 |
 
 `dur` 可以按镜头覆盖转场时长。`Shots` 原来在 film 包里，现在在 core，film 继续从原位置导出。
+
+**几条动效原则**（多数来自整理 Opus 5.5 生成视频提示词的 [awesome-opus5-5-videos](https://github.com/yihui-dev/awesome-opus5-5-videos) 里反复出现的要求）：
+
+- 不要死帧：超过 1 秒什么都不动，观众就会走神。落定的元素加 `drift`，背景自己带一点不停的动作。
+- 能变形就别切：同一个形状改尺寸、圆角、颜色，内容跟着换（keynote 包的 `Morph`），比叠化到另一张图更连贯。
+- 容器先动，内容后进；内容先走，容器再变。这样文字永远不会和下一个状态叠在一起。
+- 弹簧只要一点点回弹；大回弹留给少数需要「砸」的时刻。
+- 镜头跟着重点走：推近到正在讲的那一块（keynote 的 `ZoomCam`、film 的 `Cam`）。
+- 每个画面变化都落在旁白的 cue 或词上；有配乐的片子，也可以落在节拍上。
 
 **审动态**：静帧只能看到元素落定后的样子，看不到它怎么动。`node tools/strip.mjs s01:quote` 把 cue 前 6 帧到后 84 帧、每 6 帧一张拼成一张图（`场景:cue:起:止:步长`，最多 16 格），一次渲染出结果，输出 `out/strips/<scene>_<cue>.png`。重点看三件事：cue 之后有没有一两秒什么都没有；元素是不是落定之后就再也不动；两个镜头叠化时有没有重影。
 
@@ -155,13 +169,17 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 - **slides**（`src/slides/`）：`Panel`、`Chip`、`Kicker`、`H`，点阵背景和简单章节卡；字幕是半透明底条，按逐词时间点亮。
 - **paper**（`src/paper/`）：手绘笔记。米色方格纸底；`RoughBox`、`RoughCircle`、`RoughArrow`、`RoughLine`、`Squiggle`、`LabelBox` 是会一笔一笔画出来的手绘线条（放在 `<Svg>` 里，`p` 是绘制进度），画完以后每 4 帧重抖一次（`BOIL`），像手绘动画那样不会僵住；`Note` 便利贴带回弹落下、可以 `out` 撕走；`Marker` 荧光笔；`Hand` 手写感标题。适合讲流程、因果。
 - **neon**（`src/neon/`）：深色科技。会一直往镜头滚的透视网格地面、星空、扫描线；`Neon` 霓虹字（像灯管一样闪着亮起）；`Term` 终端窗口逐字敲命令；`Net` 节点图，节点带波纹弹出、连线画出后有数据脉冲一直流动；`Glitch` 包住整个镜头做故障切换；`Brackets` HUD 角框。适合讲系统、架构。
+- **math**（`src/math/`）：数学推导，Manim 的路子。深色底；`Axes` 网格从原点展开、坐标轴画出来；`Plot` 把函数曲线一笔描上去；`Tangent` 切线和点贴着曲线走；`Readout` 实时数值；`Steps` 一行一行推导 KaTeX 公式，最新一步点亮、旧的变暗。坐标映射用 `Plane` + `px()`/`py()`。适合讲数学、物理。
+- **keynote**（`src/keynote/`）：发布会 / 产品演示。暖灰底加缓慢漂移的色块；`Morph` 是贯穿全场的一个形状，按状态表在 logo、按钮、进度条、玻璃卡片之间弹簧变形，内容带短模糊切换；`Cursor` 光标滑到目标并点击（带按下和波纹）；`ZoomCam` 屏幕录制式推拉镜头；`Rise` 文字从遮罩线下升起。`chain()` 把多次改变的弹簧叠加起来，中途改目标也不会跳。适合讲产品、做功能演示。
+- **pixel**（`src/pixel/`）：像素游戏。所有东西画在 320×180 的 canvas 上再无平滑放大 6 倍，连中文也先栅格化再二值化成硬像素。`drawWorld` 画天空、云、两层视差山和草地（`scroll` 跟随镜头）；`hero` 会走路的小人、`coin` 旋转金币、`bar` 分格经验条、`box` RPG 对话框；精灵用字符串画。场景里用 `<PixelCanvas draw={(g, f) => …}>` 逐帧画，对话框的字用 `useSpoken().chars()` 跟旁白出现。适合轻松科普、儿童向内容。
+- **ink**（`src/ink/`）：水墨。宣纸底；`Mountains` 几层远山各自从雾里晕开（先模糊后清晰）并缓慢漂移，`Mist` 雾带，`Birds` 飞鸟；`Brush` 带飞白的毛笔笔触；`InkBlot` 墨滴在纸上洇开；`VText` 竖排文字（配 `Spoken` 念到哪里墨落到哪里，`\n` 换列）；`Seal` 红色印章按下。适合讲历史、诗词、传统文化。
 - **editorial**（`src/editorial/`）：杂志排版 / 动态文字。新闻纸底色、黑红两色；`MaskText` 大标题逐行从遮罩下升起（也能逐行升出去）；`Slam` 大数字砸进画面，`hits` 在说到某个词时再顶一下；`Block` 色块推进来再从另一侧推出去（用来遮住换版）；`Rule` 画线；`Label` 小标签；`Ticker` 跑马灯。适合讲观点、金句、数据。
 
-所有包共用 `src/core` 的 `At`（`center` 时居中位移会和你传入的 `transform` 叠加）、`Full`、`Svg`、`DrawLine`、`Tex`、`Shots`、`Spoken` 和动效函数。film 和 slides 的配色在 `src/core/theme.ts`，新包各自带调色板（`P`、`N`、`E`）。
+所有包共用 `src/core` 的 `At`（`center` 时居中位移会和你传入的 `transform` 叠加）、`Full`、`Svg`、`DrawLine`、`Tex`、`Shots`、`Spoken` 和动效函数。film 和 slides 的配色在 `src/core/theme.ts`，新包各自带调色板（`P`、`N`、`E`、`M`、`K`、`PX`、`I`）。
 
 字幕样式由风格包的 `look.subtitles` 决定（浅色底的包用 `boxColor` 换成深色底条），单场可以在登记表里覆盖，例如 `s01: {component: S01, look: film, subtitles: {hideQuotes: true}}`：这一场已经把引语大字放在画面上，就不再给引语配字幕。
 
-**选哪套**：叙事、历史、人物用 film；概念、公式、API 用 slides；流程、因果、拆解步骤用 paper；系统、架构、数据流用 neon；观点、金句、关键数字用 editorial。同一支片子可以按场混用。
+**选哪套**：叙事、人物用 film；概念、API 用 slides；流程、因果、拆解步骤用 paper；系统、架构、数据流用 neon；观点、金句、关键数字用 editorial；公式推导、函数图像用 math；产品介绍、操作演示用 keynote；轻松科普、儿童向用 pixel；历史、诗词、传统文化用 ink。同一支片子可以按场混用。
 
 ### 写一个新风格包
 
@@ -209,7 +227,7 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 
 explainer-kit is a Remotion template for narrated explainer videos. Narration lives in `tts/script.json` with inline markers: `[[cue]]` marks an animation/shot trigger, `||` inserts a dramatic pause, and `<<key|...>>` reads a quote with an alternate voice. `tts/gen.py` synthesizes each scene with edge-tts, records word boundaries and writes `public/audio/<scene>.mp3` plus `src/timings.json`. Scenes read frames through `useScene()` — `c('cue')`, `w('word')`, `rel('word', 'cue')` — so durations and animations follow the audio after any rewrite.
 
-Quick start: `npm i && npm run studio` shows the bundled ~2 min, five-scene demo (one scene per style pack), whose timings and silent audio were produced by `python tts/gen.py --mock` (no network; word times estimated from character count). `npm run fonts` downloads the Noto Sans SC / Noto Serif SC variable fonts (OFL) into `public/fonts/`; without them the stacks fall back to system fonts. All size, fps, voice, pace and font settings live in `kit.config.json`. Five optional style packs are included: `film` (letterbox, grain, grade, cue-driven shots, paper props), `slides` (panels, chips, karaoke subtitles), `paper` (hand-drawn strokes that draw on and boil, sticky notes, highlighter), `neon` (scrolling grid floor, scanlines, glowing type, terminal, node graph with flowing pulses, glitch) and `editorial` (masked kinetic headlines, slammed numbers, colour-block wipes, ticker). `src/core/motion.ts` holds a shared motion vocabulary (enter/exit with `life` + `move`, springs, idle `drift`, `punch`, `shake`), `<Spoken>` reveals on-screen text exactly as the narrator says it, and `Shots` cuts on cues with `fade`/`push`/`up`/`zoom`/`wipe`/`whip`/`black`/`flash` transitions. Review with `tools/stills.mjs`, `tools/pick.mjs`, `tools/sheet.py`, and `tools/strip.mjs` (a filmstrip of frames around a cue, to judge motion rather than end states); render with `npm run render` (uses `--gl=angle`); add a synthesized score with `tools/music.py` and mix/normalize to -16 LUFS with `tools/mix.py`.
+Quick start: `npm i && npm run studio` shows the bundled ~3 min, nine-scene demo (one scene per style pack), whose timings and silent audio were produced by `python tts/gen.py --mock` (no network; word times estimated from character count). `npm run fonts` downloads the Noto Sans SC / Noto Serif SC variable fonts (OFL) into `public/fonts/`; without them the stacks fall back to system fonts. All size, fps, voice, pace and font settings live in `kit.config.json`. Nine optional style packs are included: `film` (letterbox, grain, grade, cue-driven shots, paper props), `slides` (panels, chips, karaoke subtitles), `paper` (hand-drawn strokes that draw on and boil, sticky notes, highlighter), `neon` (scrolling grid floor, scanlines, glowing type, terminal, node graph with flowing pulses, glitch), `editorial` (masked kinetic headlines, slammed numbers, colour-block wipes, ticker), `math` (Manim-style axes, traced plots, sliding tangent, step-by-step TeX), `keynote` (one morphing shape, cursor clicks, liquid glass, screen-studio zoom), `pixel` (320×180 canvas upscaled with hard pixels, walking hero, coins, RPG dialog) and `ink` (ink-wash mountains bleeding through mist, brush strokes, vertical calligraphy, red seal). `src/core/motion.ts` holds a shared motion vocabulary (enter/exit with `life` + `move`, springs, idle `drift`, `punch`, `shake`), `<Spoken>` reveals on-screen text exactly as the narrator says it, and `Shots` cuts on cues with `fade`/`push`/`up`/`zoom`/`wipe`/`whip`/`iris`/`black`/`flash` transitions. Review with `tools/stills.mjs`, `tools/pick.mjs`, `tools/sheet.py`, and `tools/strip.mjs` (a filmstrip of frames around a cue, to judge motion rather than end states); render with `npm run render` (uses `--gl=angle`); add a synthesized score with `tools/music.py` and mix/normalize to -16 LUFS with `tools/mix.py`.
 
 ## License
 

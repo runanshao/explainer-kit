@@ -11,12 +11,13 @@ import {EASE, clamp01, tween} from './motion';
  * - zoom: the old shot zooms past the camera while the new one settles in
  * - wipe: the new shot is revealed left to right behind a moving edge
  * - whip: fast blurred pan, for energetic cuts
+ * - iris: the new shot opens out of a circle in the middle of the frame
  */
-export type Tr = 'fade' | 'cut' | 'black' | 'flash' | 'slow' | 'push' | 'up' | 'zoom' | 'wipe' | 'whip';
+export type Tr = 'fade' | 'cut' | 'black' | 'flash' | 'slow' | 'push' | 'up' | 'zoom' | 'wipe' | 'whip' | 'iris';
 export type Shot = {at: number; tr?: Tr; dur?: number; el: (t: number, d: number) => React.ReactNode};
 
-const DUR: Record<Tr, number> = {fade: 12, slow: 26, cut: 0, black: 16, flash: 12, push: 18, up: 18, zoom: 16, wipe: 20, whip: 10};
-const LAYERED = new Set<Tr>(['fade', 'slow', 'push', 'up', 'zoom', 'wipe', 'whip']);
+const DUR: Record<Tr, number> = {fade: 12, slow: 26, cut: 0, black: 16, flash: 12, push: 18, up: 18, zoom: 16, wipe: 20, whip: 10, iris: 20};
+const LAYERED = new Set<Tr>(['fade', 'slow', 'push', 'up', 'zoom', 'wipe', 'whip', 'iris']);
 
 const layer = (style: React.CSSProperties, child: React.ReactNode, key: string) => (
   <div key={key} style={{position: 'absolute', inset: 0, ...style}}>
@@ -38,6 +39,9 @@ const styles = (tr: Tr, p: number, t: number): [React.CSSProperties, React.CSSPr
       ];
     case 'wipe':
       return [{}, {clipPath: `inset(0 ${(1 - p) * 100}% 0 0)`}];
+    case 'iris':
+      // 75% of the frame's diagonal-ish radius covers the corners of a 16:9 frame
+      return [{transform: `scale(${1 + p * 0.08})`}, {clipPath: `circle(${p * 75}% at 50% 50%)`}];
     case 'whip': {
       const b = Math.sin(p * Math.PI) * 28;
       return [
