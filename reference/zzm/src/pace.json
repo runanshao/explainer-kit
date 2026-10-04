@@ -1,0 +1,6 @@
+{
+  "lead": 48,
+  "tail": 34,
+  "leadOverride": {"s01": 20},
+  "tailOverride": {"s01": 150, "s15": 150}
+}
