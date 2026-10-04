@@ -1,0 +1,36 @@
+{
+  "name": "explainer-kit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts --gl=angle",
+    "still": "remotion still src/index.ts",
+    "tts": "python tts/gen.py",
+    "tts:mock": "python tts/gen.py --mock",
+    "fonts": "node tools/fonts.mjs",
+    "stills": "node tools/stills.mjs",
+    "pick": "node tools/pick.mjs",
+    "sheet": "python tools/sheet.py",
+    "music": "python tools/music.py",
+    "mix": "python tools/mix.py",
+    "typecheck": "tsc --noEmit",
+    "test": "pytest"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.532",
+    "@remotion/cli": "4.0.532",
+    "@remotion/renderer": "4.0.532",
+    "katex": "^0.18.9",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "4.0.532"
+  },
+  "devDependencies": {
+    "@types/katex": "^0.16.8",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}

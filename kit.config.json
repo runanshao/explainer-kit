@@ -1,0 +1,39 @@
+{
+  "id": "Explainer",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "voice": "zh-CN-YunjianNeural",
+  "rate": "+10%",
+  "voices": {
+    "q": {"voice": "zh-CN-YunxiNeural", "rate": "+0%"}
+  },
+  "pause": 0.75,
+  "maxLine": 20,
+  "mockCharsPerSec": 4.2,
+  "pace": {
+    "lead": 48,
+    "tail": 34,
+    "leadOverride": {},
+    "tailOverride": {}
+  },
+  "fonts": {
+    "sans": {
+      "family": "NotoSansSC",
+      "file": "NotoSansSC-VF.ttf",
+      "weight": "100 900",
+      "url": "https://github.com/google/fonts/raw/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf",
+      "fallback": ["Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "sans-serif"]
+    },
+    "serif": {
+      "family": "NotoSerifSC",
+      "file": "NotoSerifSC-VF.ttf",
+      "weight": "200 900",
+      "url": "https://github.com/google/fonts/raw/main/ofl/notoserifsc/NotoSerifSC%5Bwght%5D.ttf",
+      "fallback": ["Noto Serif SC", "Songti SC", "SimSun", "serif"]
+    },
+    "mono": {
+      "fallback": ["Cascadia Code", "Consolas", "Menlo", "monospace"]
+    }
+  }
+}

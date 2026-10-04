@@ -1,0 +1,4 @@
+edge-tts>=7.0      # real narration (tts/gen.py without --mock)
+numpy>=1.26        # tools/music.py
+Pillow>=10.0       # tools/sheet.py
+pytest>=8.0        # tests/
