@@ -44,7 +44,7 @@ node tools/listen.mjs s05:block s05:out:30  # 一段
 
 ## 交付前的检查清单
 
-- `npx tsc --noEmit`、`pytest` 通过
+- `npm run verify` 全部通过（类型、源文件一致、每场每种画幅可渲染、两次渲染逐字节一致）
 - 改过的每场都拼帧看过，主画幅和 9x16 各一遍
 - 音效位置用 `listen` 核对过
 - 真配音（Windows 上 `python tts/gen.py`）后再看一遍：cue 位置会变，写死的帧数会错位

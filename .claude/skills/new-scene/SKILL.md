@@ -5,6 +5,8 @@ description: 在 explainer-kit 里新写一场讲解（旁白 + 画面）。用�
 
 # 写一场
 
+动手前先过一遍 `docs/principles.md` 的六条原理；遇到组件里没有现成答案的需求，从原理推（比如「要和某个词同步」就是原理 1：用 `w()` 取帧）。
+
 ## 1. 先写旁白，再想画面
 
 旁白就是时间轴。在纸面上把文稿切成「一句话一个画面」，每个画面变化前放一个 `[[cue]]`：
@@ -53,4 +55,4 @@ node tools/new-scene.mjs s10 --look paper --chapter "第十场 · 标题" --text
 
 ## 5. 交付前
 
-`npx tsc --noEmit` 通过，然后按 `review` skill 审一遍动态、声音和竖屏。
+`npm run verify` 通过，然后按 `review` skill 审一遍动态、声音和竖屏。
