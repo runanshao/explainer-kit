@@ -21,6 +21,7 @@
     "publish": "node tools/publish.mjs",
     "new:scene": "node tools/new-scene.mjs",
     "new:pack": "node tools/new-pack.mjs",
+    "verify": "node tools/verify.mjs",
     "typecheck": "tsc --noEmit",
     "test": "pytest"
   },

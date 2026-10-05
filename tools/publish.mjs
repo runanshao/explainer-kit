@@ -3,6 +3,7 @@
 //        node tools/publish.mjs --formats 9x16,1x1  → also the portrait / square cuts (or --formats all)
 //        node tools/publish.mjs --skip-tts          → keep the current audio + timings (e.g. after a visual-only edit)
 //        node tools/publish.mjs --mock              → offline timings and silent narration (pipeline check)
+//        node tools/publish.mjs --no-verify         → skip the delivery gate (tools/verify.mjs) before rendering
 // Long renders: run it detached and watch the log (see README 踩过的坑), e.g.
 //        nohup node tools/publish.mjs --formats all > out/publish.log 2>&1 &
 import {spawnSync} from 'node:child_process';
@@ -39,6 +40,8 @@ const run = (label, cmd, args) => {
 };
 
 if (!has('--skip-tts')) run('narration', py, ['tts/gen.py', ...(has('--mock') ? ['--mock'] : [])]);
+// same gate every time: a broken scene or a non-deterministic frame stops here, not 40 minutes into a render
+if (!has('--no-verify')) run('verify', 'node', ['tools/verify.mjs']);
 for (const f of [undefined, ...fmts]) run(`render ${f ?? 'main'}`, 'node', ['tools/render.mjs', ...(f ? [f] : [])]);
 run('score', py, ['tools/music.py']);
 for (const f of [undefined, ...fmts]) run(`mix ${f ?? 'main'}`, py, ['tools/mix.py', ...(f ? [f] : [])]);

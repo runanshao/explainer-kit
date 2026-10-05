@@ -18,7 +18,7 @@ node tools/new-scene.mjs s10 --look chalk --chapter "第十场 · 黑板风" --t
 
 `new-pack` 生成 `src/chalk/index.tsx`：经过 `themed()` 的调色板、带缓慢光斑的背景、章节卡、`Title`/`Card` 组件、`Look`。
 
-## 3. 每个包都要满足
+## 3. 每个包都要满足（背后是 `docs/principles.md` 的原理 2、3、4）
 
 - 调色板必须经过 `themed('<pack>', {...}, {accent: [...], accent2: [...]})`，把主色挂到 accent 槽位，品牌色才能一键替换；颜色写 `#rrggbb`。
 - 背景永远有一点动作（漂移光斑、滚动纹理、闪烁），不能整屏静止。

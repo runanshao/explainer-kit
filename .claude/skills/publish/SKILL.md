@@ -14,6 +14,8 @@ node tools/publish.mjs --skip-tts            # 只改了画面，沿用现有配
 node tools/publish.mjs --mock                # 离线跑通整条流水线（静音旁白）
 ```
 
+publish 会在渲染前先跑 `tools/verify.mjs`（验收不过就停，不会白渲染几十分钟）；确实要跳过用 `--no-verify`。
+
 成品：`out/<id>-mixed.mp4`、`out/<id>-9x16-mixed.mp4`……
 
 ## 出片前确认
