@@ -1,7 +1,7 @@
 /** s04 · neon pack demo: a terminal types, a node graph lights up node by node, pulses flow, a glitch cut, a zoom-through. */
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
-import {Shots, Spoken, useScene} from '../core';
+import {Sfx, SfxAt, Shots, Spoken, useScene} from '../core';
 import {FONT} from '../core/theme';
 import {Brackets, Glitch, N, Neon, Net, Term} from '../neon';
 
@@ -79,5 +79,17 @@ export const S04: React.FC = () => {
       ),
     },
   ];
-  return <Shots shots={shots} end={total} />;
+  const cmd = 'python tts/gen.py --mock';
+  // a keystroke every other character of the typed command (Term types at 28 chars/s)
+  const keys = Array.from({length: Math.ceil(cmd.length / 2)}, (_, i) => c('term') + 6 + Math.round((i * 2 * 30) / 28));
+  return (
+    <>
+      <Shots shots={shots} end={total} />
+      <SfxAt frames={keys} name="type" volume={0.7} />
+      <SfxAt frames={[w('一行命令') + 14, w('一行命令') + 18, w('一行命令') + 24]} name="tick" volume={0.7} />
+      <SfxAt frames={nodes.map((n) => n.at)} name="pop" volume={0.8} />
+      <Sfx at={c('glitch')} name="glitch" />
+      <Sfx at={w('故障感')} name="glitch" volume={0.6} />
+    </>
+  );
 };

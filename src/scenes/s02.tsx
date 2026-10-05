@@ -1,6 +1,6 @@
 /** s02 · slides pack demo: c() / w() / rel() shown with their live values, a timeline of cues, a KaTeX formula built term by term as it's said. */
 import React from 'react';
-import {At, DrawLine, FPS, Full, Svg, Tex, TIMINGS, drift, ease, fu, lerp, life, move, pop, stagger, tween, useScene} from '../core';
+import {At, DrawLine, FPS, Full, Sfx, Svg, Tex, TIMINGS, drift, ease, fu, lerp, life, move, pop, stagger, tween, useScene} from '../core';
 import {C, FONT} from '../core/theme';
 import {Chip, H, Kicker, Panel} from '../slides';
 
@@ -115,6 +115,18 @@ export const S02: React.FC = () => {
         <DrawLine x1={xOf(relFrom)} y1={AXIS_Y + 34} x2={xOf(relTo)} y2={AXIS_Y + 34} p={ease(f, relTo, 14)} color={C.gold} w={4} arrow />
         <line x1={xOf(f)} y1={AXIS_Y - 40} x2={xOf(f)} y2={AXIS_Y + 40} stroke={C.orange} strokeWidth={2} opacity={0.8} />
       </Svg>
+
+      {api.map((a) => (
+        <Sfx key={a.cue} at={c(a.cue)} name="pop" />
+      ))}
+      <Sfx at={cardsOut} name="whoosh" volume={0.5} />
+      {terms.map((tm, i) => (
+        <Sfx key={i} at={tm.at - 2} name="tick" volume={0.8} />
+      ))}
+      <Sfx at={w('帧率') + 14} name="pop" volume={0.6} />
+      {[0, 1, 2, 3].map((i) => (
+        <Sfx key={i} at={c('done') + 6 + i * 10} name="pop" volume={0.7} />
+      ))}
     </Full>
   );
 };

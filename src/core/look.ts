@@ -31,6 +31,8 @@ export type SubtitleStyle = {
   dim?: number;
   /** don't subtitle alternate-voice lines (when the scene already shows the quote big on screen) */
   hideQuotes?: boolean;
+  /** wrap long lines at this width (px) instead of keeping each line on one row */
+  maxWidth?: number;
 };
 
 export type Look = {
@@ -52,4 +54,9 @@ export type SceneDef = {
   look?: Look;
   /** per-scene tweaks merged over the look's subtitle style */
   subtitles?: Partial<SubtitleStyle>;
+  /**
+   * How the 16:9 picture sits in a portrait / square format: `zoom` > 1 crops the sides to make it bigger,
+   * `focus` (0..1, default 0.5) picks which horizontal part stays in view when cropped.
+   */
+  portrait?: {zoom?: number; focus?: number};
 };

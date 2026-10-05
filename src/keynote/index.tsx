@@ -8,9 +8,9 @@ import {AbsoluteFill, interpolate, spring, useCurrentFrame} from 'remotion';
 import {FPS} from '../config';
 import type {ChapterProps, Look} from '../core/look';
 import {clamp01, noise, tween} from '../core/motion';
-import {FONT} from '../core/theme';
+import {FONT, themed} from '../core/theme';
 
-export const K = {
+export const K = themed('keynote', {
   canvas: '#EEECE8',
   ink: '#111111',
   sub: '#6E6C68',
@@ -18,7 +18,7 @@ export const K = {
   accent: '#0A84FF',
   green: '#30B158',
   glass: 'rgba(255,255,255,0.62)',
-};
+}, {accent: ['accent']});
 
 /** UI spring: quick, with only a hair of overshoot. */
 const ui = (f: number, at: number) => (f < at ? 0 : spring({frame: f - at, fps: FPS, config: {damping: 20, stiffness: 190, mass: 0.75}}));

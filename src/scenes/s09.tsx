@@ -1,6 +1,6 @@
 /** s09 · ink pack demo: mountains bleed in layer by layer, a brush sweeps, vertical text inks in as it's said, a red seal stamps. */
 import React from 'react';
-import {Full, Spoken, drift, tween, useScene} from '../core';
+import {Full, Sfx, Spoken, drift, tween, useScene} from '../core';
 import {FONT} from '../core/theme';
 import {Birds, Brush, I, Mist, Mountains, Seal, VText} from '../ink';
 
@@ -47,6 +47,10 @@ export const S09: React.FC = () => {
           <Spoken text="讲历史、讲诗词" mode="fade" />
         </VText>
       </div>
+
+      <Sfx at={hill} name="chime" volume={0.5} />
+      <Sfx at={w('毛笔') - 2} name="swish" />
+      <Sfx at={w('红印') - 2} name="thud" />
     </Full>
   );
 };

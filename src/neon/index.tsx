@@ -4,9 +4,10 @@ import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
 import {FPS} from '../config';
 import type {ChapterProps, Look} from '../core/look';
 import {clamp01, pulse, rng, springAt, tween} from '../core/motion';
-import {FONT} from '../core/theme';
+import {useBeat} from '../core/Sfx';
+import {FONT, themed} from '../core/theme';
 
-export const N = {
+export const N = themed('neon', {
   bg: '#04060E',
   sky: '#0B1033',
   cyan: '#3BE3FF',
@@ -17,11 +18,12 @@ export const N = {
   dim: '#5D6C91',
   line: 'rgba(59,227,255,0.28)',
   glass: 'rgba(10,16,40,0.72)',
-};
+}, {accent: ['magenta'], accent2: ['cyan']});
 
 /** Night sky over a perspective grid floor that keeps scrolling toward the camera. */
 export const GridFloor: React.FC<{speed?: number; color?: string}> = ({speed = 1.6, color = N.cyan}) => {
   const f = useCurrentFrame();
+  const beat = useBeat().pulse();
   const r = rng(77);
   const stars = Array.from({length: 70}, () => [r() * 1920, r() * 560, r() * 1.8 + 0.6, r() * 60] as const);
   return (
@@ -47,7 +49,8 @@ export const GridFloor: React.FC<{speed?: number; color?: string}> = ({speed = 1
           WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)',
         }}
       />
-      <div style={{position: 'absolute', left: 0, right: 0, top: '56%', height: 2, background: N.magenta, boxShadow: `0 0 30px 6px ${N.magenta}88`, opacity: 0.8}} />
+      {/* the horizon flares on every beat of the music */}
+      <div style={{position: 'absolute', left: 0, right: 0, top: '56%', height: 2, background: N.magenta, boxShadow: `0 0 ${30 + 30 * beat}px ${6 + 6 * beat}px ${N.magenta}88`, opacity: 0.6 + 0.4 * beat}} />
     </AbsoluteFill>
   );
 };

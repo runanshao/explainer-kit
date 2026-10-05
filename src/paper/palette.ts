@@ -1,5 +1,6 @@
 /** Paper pack colours: cream notebook, ink pens, highlighter, sticky notes. */
-export const P = {
+import {themed} from '../core/theme';
+export const P = themed('paper', {
   ground: '#F3EDE0',
   grid: 'rgba(52,86,140,0.10)',
   ink: '#2A2833',
@@ -12,4 +13,4 @@ export const P = {
   noteBlue: '#C4E2FF',
   notePink: '#FFC9D8',
   noteGreen: '#CFEFC2',
-};
+}, {accent: ['red'], accent2: ['blue']});

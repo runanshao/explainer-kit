@@ -1,6 +1,6 @@
 /** s05 · editorial pack demo: masked headlines, type that drops in word by word with the voice, a block wipe, a slammed number. */
 import React from 'react';
-import {Full, Spoken, life, move, tween, useScene} from '../core';
+import {CFG, Full, Sfx, Spoken, life, move, tween, useScene} from '../core';
 import {Block, E, Label, MaskText, Rule, Slam, Ticker} from '../editorial';
 
 export const S05: React.FC = () => {
@@ -48,10 +48,15 @@ export const S05: React.FC = () => {
           <div style={{position: 'absolute', left: 160, top: 300}}>
             <MaskText at={c('out') + 8} lines={['讲观点，', '讲金句。']} size={150} gap={6} />
           </div>
-          <Ticker y={760} at={c('out') + 6} text="EXPLAINER-KIT · 杂志排版 · KINETIC TYPE" />
+          <Ticker y={760} at={c('out') + 6} text={`${CFG.brand.name.toUpperCase()} · 杂志排版 · KINETIC TYPE`} />
         </>
       )}
       <Block x={0} y={0} w={1920} h={1080} at={wipe} out={covered} dur={16} color={E.red} />
+      <Sfx at={wipe - 2} name="whoosh" />
+      <Sfx at={covered} name="swish" volume={0.6} />
+      <Sfx at={w('一百二十')} name="slam" />
+      <Sfx at={w('帧')} name="thud" volume={0.7} />
+      <Sfx at={c('out')} name="whoosh" volume={0.5} />
     </Full>
   );
 };

@@ -1,6 +1,6 @@
 /** s08 · pixel pack demo: a hero walks in, collects a coin per point, an EXP bar fills, an RPG dialog types along with the voice, LEVEL UP. */
 import React from 'react';
-import {Full, rng, springAt, tween, useScene, useSpoken} from '../core';
+import {Full, Sfx, SfxAt, rng, springAt, tween, useBeat, useScene, useSpoken} from '../core';
 import {PW, PX, PixelCanvas, type Px, GROUND, bar, box, coin, drawWorld, hero} from '../pixel';
 
 const COINS = [170, 235, 300];
@@ -25,6 +25,9 @@ export const S08: React.FC = () => {
   const barAt = c('bar');
   const talk = c('talk');
   const win = c('win');
+  const beat = useBeat();
+  // same pickup moment the drawing uses: when the hero's x passes the coin
+  const pickAt = (cx: number) => coinAt + ((cx - 90) / 230) * (barAt - coinAt - 10);
 
   return (
     <Full>
@@ -40,7 +43,7 @@ export const S08: React.FC = () => {
           let got = 0;
           COINS.forEach((cx, i) => {
             const sx = cx - camX;
-            const pickedAt = coinAt + ((cx - 90) / 230) * (barAt - coinAt - 10);
+            const pickedAt = pickAt(cx);
             if (f < pickedAt) {
               coin(g, sx, GROUND - 44 + Math.round(Math.sin((f + i * 9) / 8) * 2), f + i * 3, 2);
             } else {
@@ -52,7 +55,8 @@ export const S08: React.FC = () => {
 
           // hero: walks, idles with a bob, jumps on LEVEL UP
           const jump = f >= win ? Math.abs(Math.sin(((f - win) / 14) * Math.PI)) * 14 * Math.max(0, 1 - (f - win) / 60) : 0;
-          hero(g, worldX - camX - 12, GROUND - Math.round(jump) + (moving ? 0 : Math.floor(f / 20) % 2), moving, f, false, 2);
+          // standing still, he bobs on the music's beat
+          hero(g, worldX - camX - 12, GROUND - Math.round(jump) + (moving ? 0 : beat.count() % 2), moving, f, false, 2);
 
           // HUD: coin counter and EXP bar
           if (f >= coinAt) {
@@ -100,6 +104,10 @@ export const S08: React.FC = () => {
           }
         }}
       />
+      <SfxAt frames={COINS.map(pickAt)} name="coin" />
+      <SfxAt frames={Array.from({length: 10}, (_, k) => barAt + ((k + 1) * (talk - barAt - 6)) / 10)} name="tick" volume={0.6} />
+      <SfxAt frames={lineAt} name="tick" volume={0.35} />
+      <Sfx at={win} name="levelup" />
     </Full>
   );
 };

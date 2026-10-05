@@ -27,7 +27,8 @@ export const SCENES: Record<string, SceneDef> = {
   s04: {component: S04, look: neon},
   s05: {component: S05, look: editorial},
   s06: {component: S06, look: math},
-  s07: {component: S07, look: keynote},
+  // everything in s07 happens around the centre, so the portrait cut can crop the sides and show it bigger
+  s07: {component: S07, look: keynote, portrait: {zoom: 1.3}},
   s08: {component: S08, look: pixel},
   s09: {component: S09, look: ink},
 };

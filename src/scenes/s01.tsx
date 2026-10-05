@@ -1,6 +1,6 @@
 /** s01 · film pack demo: shots cut on cues, a stamp lands on a spoken word, a quote in the alternate voice. */
 import React from 'react';
-import {Spoken, Svg, ease, shake, useScene} from '../core';
+import {Sfx, Spoken, Svg, ease, shake, useScene} from '../core';
 import {C, FONT} from '../core/theme';
 import {BigQuote, Cam, Count, Desk, Doc, Glow, Graded, Line, MID_Y, Place, Shots, Sky, Stamp, Tag, Void} from '../film';
 
@@ -166,5 +166,14 @@ export const S01: React.FC = () => {
       },
     },
   ];
-  return <Shots shots={shots} end={total} />;
+  return (
+    <>
+      <Shots shots={shots} end={total} />
+      {/* sounds live outside the shots so a cut never chops them off */}
+      <Sfx at={c('old') + rel('改一句', 'old') + 8} name="draw" volume={0.6} />
+      <Sfx at={w('重新对一遍')} name="thud" />
+      <Sfx at={c('quote') + 4} name="chime" volume={0.6} />
+      <Sfx at={c('ask') + rel('第几帧', 'ask') + 22} name="pop" />
+    </>
+  );
 };

@@ -4,15 +4,15 @@ import {AbsoluteFill, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import {HEIGHT, WIDTH} from '../config';
 import type {ChapterProps, Look} from '../core/look';
 import {clamp01, noise, rng, tween} from '../core/motion';
-import {FONT} from '../core/theme';
+import {FONT, themed} from '../core/theme';
 
-export const I = {
+export const I = themed('ink', {
   paper: '#EFE6D3',
   ink: '#1B1A18',
   wash: '#5B5A55',
   mist: 'rgba(239,230,211,0.9)',
   seal: '#B3261E',
-};
+}, {accent: ['seal']});
 
 /** Rice paper: warm ground, fibre texture, soft darker edges. */
 export const RicePaper: React.FC = () => (

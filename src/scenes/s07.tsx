@@ -1,7 +1,7 @@
 /** s07 · keynote pack demo: one shape — logo → button → progress bar → glass card → logo — driven by a cursor, with a camera push-in. */
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
-import {Full, Spoken, tween, useScene} from '../core';
+import {CFG, Full, Sfx, Spoken, tween, useScene} from '../core';
 import {FONT} from '../core/theme';
 import {Cursor, K, Morph, Rise, ZoomCam} from '../keynote';
 
@@ -26,7 +26,7 @@ const Card: React.FC = () => (
     </div>
     <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
       <div>
-        <div style={{fontSize: 38, fontWeight: 800, letterSpacing: -0.5}}>explainer-kit.mp4</div>
+        <div style={{fontSize: 38, fontWeight: 800, letterSpacing: -0.5}}>{CFG.brand.name}.mp4</div>
         <div style={{fontSize: 26, color: K.sub, marginTop: 6}}>1920 × 1080 · 30 fps · 03:02</div>
       </div>
       <div style={{fontSize: 30, fontWeight: 800, color: '#fff', background: K.green, borderRadius: 30, padding: '10px 24px'}}>✓ 已完成</div>
@@ -78,7 +78,7 @@ export const S07: React.FC = () => {
         {/* the ending lands back on the first frame's logo, with the wordmark beside it */}
         <div style={{position: 'absolute', left: CX - 190, top: CY - 66}}>
           <Rise at={fin + 8} size={110}>
-            explainer-kit
+            {CFG.brand.name}
           </Rise>
         </div>
 
@@ -93,6 +93,13 @@ export const S07: React.FC = () => {
           ]}
         />
       </Full>
+      <Sfx at={c('btn')} name="pop" volume={0.6} />
+      <Sfx at={click} name="click" />
+      <Sfx at={card - 6} name="tick" volume={0.6} />
+      <Sfx at={card} name="pop" volume={0.7} />
+      <Sfx at={c('zoom')} name="whoosh" volume={0.45} />
+      <Sfx at={fin} name="whoosh" volume={0.35} />
+      <Sfx at={fin + 8} name="chime" volume={0.6} />
     </ZoomCam>
   );
 };

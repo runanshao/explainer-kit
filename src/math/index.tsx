@@ -4,9 +4,9 @@ import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
 import type {ChapterProps, Look} from '../core/look';
 import {clamp01, tween} from '../core/motion';
 import {Tex} from '../core/Tex';
-import {FONT} from '../core/theme';
+import {FONT, themed} from '../core/theme';
 
-export const M = {
+export const M = themed('math', {
   bg: '#0F1222',
   text: '#ECEFF4',
   dim: '#7D86A8',
@@ -17,7 +17,7 @@ export const M = {
   green: '#83C167',
   red: '#FC6255',
   purple: '#A88BE8',
-};
+}, {accent: ['yellow'], accent2: ['blue']});
 
 /** Dark ground with a faint background grid, like Manim's NumberPlane behind everything. */
 export const MathGround: React.FC = () => (

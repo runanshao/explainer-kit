@@ -3,15 +3,15 @@ import React from 'react';
 import {AbsoluteFill, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import type {ChapterProps, Look} from '../core/look';
 import {EASE, punch, tween} from '../core/motion';
-import {FONT} from '../core/theme';
+import {FONT, themed} from '../core/theme';
 
-export const E = {
+export const E = themed('editorial', {
   paper: '#F1ECE2',
   ink: '#121212',
   red: '#E4322B',
   grey: '#8B857A',
   rule: 'rgba(18,18,18,0.85)',
-};
+}, {accent: ['red']});
 
 /** Flat newsprint with faint column guides and a little grain. */
 export const EdGround: React.FC = () => (

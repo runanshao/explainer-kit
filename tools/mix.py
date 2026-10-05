@@ -1,6 +1,7 @@
 """Mix the music under the narration, ducking it with a sidechain, and loudness-normalize to -16 LUFS.
 
     python tools/mix.py                       # out/<id>.mp4 + out/music.wav → out/<id>-mixed.mp4
+    python tools/mix.py 9x16                  # out/<id>-9x16.mp4 → out/<id>-9x16-mixed.mp4 (a kit.config.json format)
     python tools/mix.py VIDEO MUSIC OUTPUT    # explicit paths
 
 <id> is the composition id from kit.config.json (what `npm run render` writes by default).
@@ -20,9 +21,12 @@ FILTER = (
 
 def main(argv):
     out_dir = ROOT / "out"
-    video = argv[0] if len(argv) > 0 else str(out_dir / f"{CFG['id']}.mp4")
+    name = CFG["id"]
+    if argv and argv[0] in CFG.get("formats", {}):
+        name = f"{name}-{argv.pop(0)}"
+    video = argv[0] if len(argv) > 0 else str(out_dir / f"{name}.mp4")
     music = argv[1] if len(argv) > 1 else str(out_dir / "music.wav")
-    output = argv[2] if len(argv) > 2 else str(out_dir / f"{CFG['id']}-mixed.mp4")
+    output = argv[2] if len(argv) > 2 else str(out_dir / f"{name}-mixed.mp4")
     cmd = [
         "ffmpeg", "-y", "-i", video, "-i", music,
         "-filter_complex", FILTER,

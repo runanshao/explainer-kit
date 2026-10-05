@@ -25,7 +25,7 @@ python tts/gen.py                   # 真 edge-tts，需要联网和 ffmpeg；�
 
 | 路径 | 作用 |
 |---|---|
-| `kit.config.json` | 唯一配置：合成 ID、尺寸、帧率、旁白音色与语速、引语音色、停顿时长、字幕行长、`--mock` 语速、每场前后留白、字体 |
+| `kit.config.json` | 唯一配置：合成 ID、尺寸、帧率、旁白音色与语速、引语音色、停顿时长、字幕行长、`--mock` 语速、每场前后留白、品牌色、画幅、音效音量、配乐节拍、字体 |
 | `tts/script.json` | 旁白稿，每场一个 `{id, chapter, text}` |
 | `tts/gen.py` | 旁白 → 音频 + `src/timings.json`；`--mock` 离线估算 |
 | `src/core/` | 与风格无关的核心：时间轴 API、动效词汇（`motion.ts`）、跟旁白同步的文字（`Spoken`）、镜头与转场（`Shots`）、`Video` 外壳、布局助手、`Tex`、配色与字体栈 |
@@ -39,8 +39,10 @@ python tts/gen.py                   # 真 edge-tts，需要联网和 ffmpeg；�
 | `src/pixel/` | 像素游戏风格包（可删） |
 | `src/ink/` | 水墨风格包（可删） |
 | `src/scenes/` | 你的场景；`index.ts` 是登记表 |
-| `tools/` | 审图、拼图、配乐、混音、下载字体 |
+| `tools/` | 一键出片、新建场景/风格包、审图、拼帧、听音效、配乐、混音、音效合成、下载字体 |
 | `public/fx/` | 胶片颗粒和纸张纹理 |
+| `public/sfx/` | 音效库（`tools/sfx.py` 合成，无版权问题） |
+| `.claude/skills/` | 给 Claude Code 的项目 skill：写一场、审片、新风格包、出片 |
 
 ## 配置 `kit.config.json`
 
@@ -53,6 +55,11 @@ python tts/gen.py                   # 真 edge-tts，需要联网和 ffmpeg；�
 | `maxLine` | 字幕每行最多字数 |
 | `mockCharsPerSec` | `--mock` 估算语速，默认 4.2 字/秒 |
 | `pace.lead` / `pace.tail` | 每场旁白前（放章节卡）和旁白后的留白帧数；`leadOverride` / `tailOverride` 按场覆盖 |
+| `brand` | `name`（片尾、跑马灯里的名字）；`accent` / `accent2`（#rrggbb，填了就替换所有风格包的主色和副色，`null` 保留各包原色） |
+| `theme` | 按包微调单个颜色，例如 `{"neon": {"cyan": "#00FFC2"}}`，键名见各包调色板（`C` `P` `N` `E` `M` `K` `PX` `I`） |
+| `formats` | 额外画幅，每个会多一个合成 `<id>-<键名>`：默认 `9x16`（1080×1920）和 `1x1`（1080×1080）；`zoom` > 1 时放大画面、裁掉两侧 |
+| `sfx.volume` | 音效总音量（0–1） |
+| `music.bpm` | 配乐节拍；场景里 `useBeat()` 用同一个节拍网格 |
 | `fonts` | `sans` / `serif` / `mono` 的字体名、文件、下载地址和后备字体 |
 
 `src/Root.tsx`、`tools/*.mjs`、`tools/*.py`、`tts/gen.py` 都从这里读，不要在别处写死这些值。
@@ -149,6 +156,12 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 - 镜头跟着重点走：推近到正在讲的那一块（keynote 的 `ZoomCam`、film 的 `Cam`）。
 - 每个画面变化都落在旁白的 cue 或词上；有配乐的片子，也可以落在节拍上。
 
+**音效和节拍**（`Sfx.tsx`）
+
+`<Sfx at={帧} name="pop" volume={0.6} />` 在本场某一帧播放 `public/sfx/pop.wav`；同一个声音打在多帧用 `<SfxAt frames={[...]} name="tick" />`。声音库：`click` `pop` `whoosh` `whip` `swish` `thud` `slam` `tick` `type` `coin` `levelup` `glitch` `chime` `draw`，都由 `python tools/sfx.py` 用 numpy 合成（改配方后重跑）。**放在场景最外层**，不要放进 `Shots` 的镜头里，镜头切走会把声音截断。`Shots` 会给移动类转场自动配声音（`push`/`up`/`zoom` 配 `whoosh`，`whip` 配 `whip`，`wipe`/`iris` 配 `swish`），`sfx={false}` 关掉。音效跟画面一起进渲染出来的音轨，`tools/mix.py` 再把配乐压在下面。
+
+配乐（`tools/music.py`）在 `music.bpm` 的节拍网格上加了很轻的鼓点。场景里 `const beat = useBeat()`：`beat.next(帧)` 把事件吸附到下一拍，`beat.nearest(帧)` 吸附到最近一拍，`beat.pulse()` 每拍一次从 1 衰减到 0（neon 的地平线、pixel 小人原地踏步都用它）。
+
 **审动态**：静帧只能看到元素落定后的样子，看不到它怎么动。`node tools/strip.mjs s01:quote` 把 cue 前 6 帧到后 84 帧、每 6 帧一张拼成一张图（`场景:cue:起:止:步长`，最多 16 格），一次渲染出结果，输出 `out/strips/<scene>_<cue>.png`。重点看三件事：cue 之后有没有一两秒什么都没有；元素是不是落定之后就再也不动；两个镜头叠化时有没有重影。
 
 ## 工作流
@@ -157,9 +170,31 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 2. **合成**：`python tts/gen.py`（只重做某几场：`python tts/gen.py s02`；离线占位：`python tts/gen.py --mock`）。
 3. **预览**：`npm run studio`。
 4. **审图**：`node tools/stills.mjs s01 s02` 在每个 cue 后约 2.5 秒出一张图（`OFF=30 node tools/stills.mjs` 改偏移），`python tools/sheet.py s01` 拼成 2×2 的检查表；只看某几帧用 `node tools/pick.mjs s01:quote:40 s02:end:-10`（`场景:cue:偏移帧`，`end` 表示旁白结束）；看动态用 `node tools/strip.mjs s01:quote`（见「动效」）。输出在 `out/stills`、`out/sheets`、`out/pick`、`out/strips`。
-5. **渲染**：`npm run render`（带 `--gl=angle`）→ `out/<id>.mp4`。
+   听音效：`node tools/listen.mjs s05` 渲染这一场的音轨，列出每个声音离哪个 cue 多少帧；看全片：`node tools/overview.mjs`（`--format 9x16` 看竖屏）。
+5. **渲染**：`npm run render`（带 `--gl=angle`）→ `out/<id>.mp4`；竖屏 `npm run render -- 9x16` → `out/<id>-9x16.mp4`。
 6. **配乐**：`python tools/music.py` → `out/music.wav`。按 timings 每场一段和声，每个章节开头一声轻击，重配音后重跑即可对齐。
-7. **混音**：`python tools/mix.py` → `out/<id>-mixed.mp4`。配乐低通后按旁白做 sidechain 压缩，再整体 `loudnorm=I=-16:TP=-1.5:LRA=11`。
+7. **混音**：`python tools/mix.py` → `out/<id>-mixed.mp4`（竖屏 `python tools/mix.py 9x16`）。配乐低通后按旁白做 sidechain 压缩，再整体 `loudnorm=I=-16:TP=-1.5:LRA=11`。
+
+第 2、5、6、7 步可以一条命令跑完：`node tools/publish.mjs`（`--formats 9x16,1x1` 或 `all` 同时出其他画幅，`--skip-tts` 沿用现有配音，`--mock` 离线跑通流程）。
+
+## 画幅和品牌
+
+场景永远按主画幅（1920×1080）写。竖屏和方屏由外壳排版：16:9 画面放在中间，上面是章节标题，下面是按行长自动放大的字幕，最底下一条全片进度条，背景用这一场风格包的底纹铺满。内容集中在画面中间的场景，可以在登记表里放大裁边：`s07: {component: S07, look: keynote, portrait: {zoom: 1.3}}`（`focus` 0–1 决定裁剪时保留哪一侧）。
+
+换品牌色只改 `kit.config.json`：`"brand": {"name": "你的产品", "accent": "#FF5A1F", "accent2": "#7B61FF"}`，九套风格包的主色、副色一起换掉；单个颜色再用 `theme` 微调。每个包把哪些颜色当作主色，写在它调色板的 `themed()` 第三个参数里。
+
+## 自动化和 skill
+
+反复手动做的事都收成了脚本：
+
+| 命令 | 做什么 |
+|---|---|
+| `node tools/new-scene.mjs s10 --look paper --chapter "…" --text "[[a]]……"` | 追加旁白、生成能直接跑的场景文件（每个 cue 一段跟着旁白出现的字）、登记、跑 mock 时间轴 |
+| `node tools/new-pack.mjs chalk --base "#1F2B26" --accent "#F2C14E"` | 生成一个新风格包骨架：接好品牌色的调色板、会动的背景、章节卡、组件、Look |
+| `node tools/publish.mjs --formats all` | 配音 → 各画幅渲染 → 配乐 → 混音 |
+| `node tools/strip.mjs` / `overview.mjs` / `listen.mjs` | 审动态 / 看全片 / 听音效 |
+
+`.claude/skills/` 里有四个项目 skill，在 Claude Code 里打开这个仓库就能用：`new-scene`（从文稿到一场）、`review`（审片清单）、`new-style-pack`（新风格包的要求）、`publish`（出片和踩过的坑）。
 
 ## 风格包
 
@@ -183,9 +218,11 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 
 ### 写一个新风格包
 
-照着 `src/paper/index.tsx` 的结构：一个调色板、一个背景组件（建议带一点不停的小动作：滚动、闪烁、纸纹跳动）、一个章节卡、几个道具组件，最后导出一个 `Look`。道具只用 `useCurrentFrame()` 和传进来的帧号，不要用 `Math.random()`。然后在 `src/scenes/index.ts` 里给场景挂上这个 look。
+`node tools/new-pack.mjs <名字> --base <底色> --accent <主色>` 生成骨架，再照着 `src/paper/index.tsx` 这类成熟的包扩展：调色板走 `themed()`（品牌色才能替换）、背景带一点不停的小动作（滚动、闪烁、纸纹跳动）、章节卡、几个道具组件，最后导出一个 `Look`。道具只用 `useCurrentFrame()` 和传进来的帧号，不要用 `Math.random()`。要求清单见 `.claude/skills/new-style-pack/SKILL.md`。
 
 ## 加一个场景
+
+最快：`node tools/new-scene.mjs s10 --look slides --chapter "第十场 · 标题" --text "[[a]]……[[b]]……"`，下面三步它都会做好。手动的话：
 
 1. 在 `tts/script.json` 里加一项，比如 `{"id": "s03", "chapter": "第三场 · 标题", "text": "[[a]]……[[b]]……"}`，跑 `python tts/gen.py s03`（或 `--mock`）。
 2. 新建 `src/scenes/s03.tsx`：
@@ -215,7 +252,9 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 - **标题用 `Spoken` 等念到才出，前面那半句也会空**。「换一套衣服：手绘笔记风」里标题要等一秒多才念到。给开头那半句也配上字（演示片 s03–s05 的小标签），或者把标题提前放好、用 `mode="ink"` 念到再点亮。
 - **相似画面别用 `fade` 转场**。两张纸、两组卡片叠化时会叠出重影；用 `push`，或者先让旧元素 `life(..., out)` 离场、再让新元素进场（演示片 s02）。
 - **只看静帧审不出动效问题**。静帧默认在 cue 后 2.5 秒，那时一切都已落定。用 `tools/strip.mjs` 看 cue 前后一段。
-- **没装 Remotion 自带浏览器的环境**（比如云端沙箱）可以设 `REMOTION_BROWSER=/path/to/chrome-headless-shell`，`tools/` 里的渲染脚本都会用它。
+- **没装 Remotion 自带浏览器的环境**（比如云端沙箱）：`tools/` 里的渲染脚本会自动用 `/opt/pw-browsers` 里预装的 headless shell，也可以设 `REMOTION_BROWSER=/path/to/chrome-headless-shell` 指定。
+- **音效放进 `Shots` 的镜头里会被截断**：镜头一切走就卸载了。`<Sfx>` 放在场景最外层。
+- **多了几个合成以后，直接 `remotion render src/index.ts` 会问你渲染哪一个**。用 `npm run render`（`tools/render.mjs`），它按 `kit.config.json` 选好合成和输出路径。
 - **`zh-CN-YunyangNeural` 在 +6% 时只有约 3.3 字/秒**，听着拖。用它的话语速调到 +15% 左右。
 - **`--mock` 的时间只是估算**（每字 1/4.2 秒），用来搭画面足够，但换成真配音后每个 cue 的位置都会变；按 cue 和词取帧的写法不受影响，写死的帧数会错位。
 - **只重做某几场时，其他场沿用旧 timings**：`python tts/gen.py s02` 不会动 s01 的音频和时间。
@@ -227,7 +266,7 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 
 explainer-kit is a Remotion template for narrated explainer videos. Narration lives in `tts/script.json` with inline markers: `[[cue]]` marks an animation/shot trigger, `||` inserts a dramatic pause, and `<<key|...>>` reads a quote with an alternate voice. `tts/gen.py` synthesizes each scene with edge-tts, records word boundaries and writes `public/audio/<scene>.mp3` plus `src/timings.json`. Scenes read frames through `useScene()` — `c('cue')`, `w('word')`, `rel('word', 'cue')` — so durations and animations follow the audio after any rewrite.
 
-Quick start: `npm i && npm run studio` shows the bundled ~3 min, nine-scene demo (one scene per style pack), whose timings and silent audio were produced by `python tts/gen.py --mock` (no network; word times estimated from character count). `npm run fonts` downloads the Noto Sans SC / Noto Serif SC variable fonts (OFL) into `public/fonts/`; without them the stacks fall back to system fonts. All size, fps, voice, pace and font settings live in `kit.config.json`. Nine optional style packs are included: `film` (letterbox, grain, grade, cue-driven shots, paper props), `slides` (panels, chips, karaoke subtitles), `paper` (hand-drawn strokes that draw on and boil, sticky notes, highlighter), `neon` (scrolling grid floor, scanlines, glowing type, terminal, node graph with flowing pulses, glitch), `editorial` (masked kinetic headlines, slammed numbers, colour-block wipes, ticker), `math` (Manim-style axes, traced plots, sliding tangent, step-by-step TeX), `keynote` (one morphing shape, cursor clicks, liquid glass, screen-studio zoom), `pixel` (320×180 canvas upscaled with hard pixels, walking hero, coins, RPG dialog) and `ink` (ink-wash mountains bleeding through mist, brush strokes, vertical calligraphy, red seal). `src/core/motion.ts` holds a shared motion vocabulary (enter/exit with `life` + `move`, springs, idle `drift`, `punch`, `shake`), `<Spoken>` reveals on-screen text exactly as the narrator says it, and `Shots` cuts on cues with `fade`/`push`/`up`/`zoom`/`wipe`/`whip`/`iris`/`black`/`flash` transitions. Review with `tools/stills.mjs`, `tools/pick.mjs`, `tools/sheet.py`, and `tools/strip.mjs` (a filmstrip of frames around a cue, to judge motion rather than end states); render with `npm run render` (uses `--gl=angle`); add a synthesized score with `tools/music.py` and mix/normalize to -16 LUFS with `tools/mix.py`.
+Quick start: `npm i && npm run studio` shows the bundled ~3 min, nine-scene demo (one scene per style pack), whose timings and silent audio were produced by `python tts/gen.py --mock` (no network; word times estimated from character count). `npm run fonts` downloads the Noto Sans SC / Noto Serif SC variable fonts (OFL) into `public/fonts/`; without them the stacks fall back to system fonts. All size, fps, voice, pace and font settings live in `kit.config.json`. Nine optional style packs are included: `film` (letterbox, grain, grade, cue-driven shots, paper props), `slides` (panels, chips, karaoke subtitles), `paper` (hand-drawn strokes that draw on and boil, sticky notes, highlighter), `neon` (scrolling grid floor, scanlines, glowing type, terminal, node graph with flowing pulses, glitch), `editorial` (masked kinetic headlines, slammed numbers, colour-block wipes, ticker), `math` (Manim-style axes, traced plots, sliding tangent, step-by-step TeX), `keynote` (one morphing shape, cursor clicks, liquid glass, screen-studio zoom), `pixel` (320×180 canvas upscaled with hard pixels, walking hero, coins, RPG dialog) and `ink` (ink-wash mountains bleeding through mist, brush strokes, vertical calligraphy, red seal). `src/core/motion.ts` holds a shared motion vocabulary (enter/exit with `life` + `move`, springs, idle `drift`, `punch`, `shake`), `<Spoken>` reveals on-screen text exactly as the narrator says it, and `Shots` cuts on cues with `fade`/`push`/`up`/`zoom`/`wipe`/`whip`/`iris`/`black`/`flash` transitions. Sound effects are synthesized by `tools/sfx.py` into `public/sfx/` and placed with `<Sfx at={frame} name="pop" />` (moving `Shots` transitions add their own); the score pulses on a `music.bpm` grid that scenes can follow with `useBeat()`. `brand.accent`/`accent2` in `kit.config.json` recolour every pack, `theme.<pack>` overrides single keys, and `formats` adds portrait (9:16) and square (1:1) compositions that lay the 16:9 picture out with a title band, large captions and a progress bar. `tools/publish.mjs` runs TTS → render (all formats) → score → mix in one go; `tools/new-scene.mjs` and `tools/new-pack.mjs` scaffold scenes and style packs; `.claude/skills/` holds Claude Code skills for writing a scene, reviewing, building a pack and publishing. Review with `tools/stills.mjs`, `tools/pick.mjs`, `tools/sheet.py`, `tools/strip.mjs` (a filmstrip of frames around a cue, to judge motion rather than end states), `tools/overview.mjs` (one frame per scene) and `tools/listen.mjs` (renders a range's audio and lists sound events by cue); render with `npm run render` (uses `--gl=angle`); add a synthesized score with `tools/music.py` and mix/normalize to -16 LUFS with `tools/mix.py`.
 
 ## License
 

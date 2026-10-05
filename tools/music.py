@@ -2,6 +2,8 @@
 
 - a low drone pad, one section per scene: each scene gets its own chord progression (cycled from PROGRESSIONS)
 - a soft hit (low thump + bell) at the start of each scene, i.e. on each chapter card
+- a quiet pulse on the beat grid (kit.config.json "music.bpm", counted from 0): a soft kick on every beat, a shaker
+  on the off-beats. Scenes see the same grid through useBeat() (src/core/Sfx.tsx), so visuals can land on the music.
 Scene boundaries come from src/timings.json + kit.config.json, so the score follows re-TTS automatically.
 Then mix it under the narration with tools/mix.py.
 """
@@ -9,10 +11,12 @@ import wave
 
 import numpy as np
 
-from kit import ROOT, scene_spans, timings
+from kit import CFG, ROOT, scene_spans, timings
 
 SR = 44100
-BAR = 9.0  # seconds per chord
+BPM = CFG.get("music", {}).get("bpm", 96)
+BEAT = 60.0 / BPM
+BAR = 16 * BEAT  # seconds per chord: four bars of 4/4
 # MIDI notes, four chords per progression; scene i uses PROGRESSIONS[i % len]
 PROGRESSIONS = [
     [[38, 45, 50, 53], [34, 41, 50, 53], [36, 43, 48, 55], [33, 40, 49, 52]],  # Dm  Bb  C  A
@@ -79,6 +83,19 @@ def main():
         m = BELL[si % len(BELL)]
         bell = (np.sin(2 * np.pi * hz(m) * tt) + 0.3 * np.sin(2 * np.pi * hz(m) * 2.76 * tt) * np.exp(-tt * 3)) * np.exp(-tt * 1.1)
         add(int(at * SR), 0.22 * bell)
+
+    # ── pulse on the beat grid: kick on every beat (accent on beat 1), shaker on the off-beats ──
+    k = int(0.35 * SR)
+    tt = np.arange(k) / SR
+    kick = np.sin(2 * np.pi * np.cumsum(70 * np.exp(-tt * 18) + 45) / SR) * np.exp(-tt * 9)
+    k2 = int(0.06 * SR)
+    shaker = rng.standard_normal(k2) * np.exp(-np.arange(k2) / SR * 60)
+    shaker = shaker - np.convolve(shaker, np.ones(6) / 6, mode="same")  # crude high-pass
+    nb = int(total / BEAT)
+    for b in range(nb):
+        at = b * BEAT
+        add(int(at * SR), (0.22 if b % 4 == 0 else 0.14) * kick)
+        add(int((at + BEAT / 2) * SR), 0.05 * shaker)
 
     # fades + normalize
     y = out / (np.max(np.abs(out)) + 1e-9)

@@ -7,13 +7,13 @@ import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {HEIGHT, WIDTH} from '../config';
 import type {ChapterProps, Look} from '../core/look';
 import {noise} from '../core/motion';
-import {FONT} from '../core/theme';
+import {FONT, themed} from '../core/theme';
 
 export const PW = 320;
 export const PH = 180;
 export const GROUND = 140;
 
-export const PX = {
+export const PX = themed('pixel', {
   sky0: '#3E7FD6',
   sky1: '#6FB1F0',
   sky2: '#A6D8FA',
@@ -34,7 +34,7 @@ export const PX = {
   box: '#1B1834',
   boxLine: '#F4FAFF',
   exp: '#7CE85A',
-};
+}, {accent: ['red'], accent2: ['blue']});
 
 /** Drawing helpers on the low-res canvas. */
 export type Px = {

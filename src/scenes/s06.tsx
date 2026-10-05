@@ -1,6 +1,6 @@
 /** s06 · math pack demo: axes draw, y = x² is traced, a tangent slides with a live slope, the derivative is derived step by step, then plotted. */
 import React from 'react';
-import {Full, Spoken, Svg, tween, useScene} from '../core';
+import {Full, Sfx, Spoken, Svg, tween, useScene} from '../core';
 import {FONT} from '../core/theme';
 import {Axes, M, type Plane, Plot, Readout, Steps, Tangent, px, py} from '../math';
 
@@ -57,6 +57,14 @@ export const S06: React.FC = () => {
           ]}
         />
       </div>
+
+      <Sfx at={w('坐标轴') - 6} name="whoosh" volume={0.45} />
+      <Sfx at={w('曲线') - 4} name="draw" volume={0.5} />
+      <Sfx at={t0} name="pop" volume={0.7} />
+      <Sfx at={c('tex')} name="chime" volume={0.45} />
+      <Sfx at={w('极限') - 4} name="chime" volume={0.45} />
+      <Sfx at={w('二倍') - 4} name="chime" volume={0.6} />
+      <Sfx at={c('fit')} name="draw" volume={0.5} />
     </Full>
   );
 };

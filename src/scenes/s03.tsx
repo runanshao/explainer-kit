@@ -1,6 +1,6 @@
 /** s03 · paper pack demo: strokes draw on and boil, sticky notes drop, arrows connect, the camera pulls back to sum up. */
 import React from 'react';
-import {Full, Spoken, Svg, drift, eio, lerp, tween, useScene} from '../core';
+import {Full, Sfx, Spoken, Svg, drift, eio, lerp, tween, useScene} from '../core';
 import {FONT} from '../core/theme';
 import {Hand, LabelBox, Marker, Note, P, RoughArrow, RoughCircle, Squiggle} from '../paper';
 
@@ -68,6 +68,20 @@ export const S03: React.FC = () => {
           <Marker at={w('流程')}>讲流程</Marker>、<Marker at={w('因果')}>讲因果</Marker>
         </Hand>
       </div>
+
+      {/* pencil on paper for every stroke, a slap for each sticky note */}
+      <Sfx at={w('笔记风') + 8} name="draw" volume={0.5} />
+      {BOXES.map((b, i) => (
+        <Sfx key={b.label} at={c('box') + i * 10} name="draw" volume={0.6} />
+      ))}
+      <Sfx at={w('抖动') - 6} name="draw" volume={0.6} />
+      <Sfx at={c('note')} name="thud" volume={0.6} />
+      <Sfx at={c('note') + 7} name="thud" volume={0.6} />
+      <Sfx at={w('时间戳') - 4} name="swish" volume={0.5} />
+      <Sfx at={w('动画', 1) - 4} name="swish" volume={0.5} />
+      <Sfx at={c('sum')} name="whoosh" volume={0.35} />
+      <Sfx at={w('流程')} name="draw" volume={0.35} />
+      <Sfx at={w('因果')} name="draw" volume={0.35} />
     </Full>
   );
 };

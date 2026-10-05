@@ -2,6 +2,7 @@
 import React from 'react';
 import {interpolate, useCurrentFrame} from 'remotion';
 import {EASE, clamp01, tween} from './motion';
+import {Sfx, type SfxName} from './Sfx';
 
 /**
  * Transition into a shot:
@@ -17,6 +18,8 @@ export type Tr = 'fade' | 'cut' | 'black' | 'flash' | 'slow' | 'push' | 'up' | '
 export type Shot = {at: number; tr?: Tr; dur?: number; el: (t: number, d: number) => React.ReactNode};
 
 const DUR: Record<Tr, number> = {fade: 12, slow: 26, cut: 0, black: 16, flash: 12, push: 18, up: 18, zoom: 16, wipe: 20, whip: 10, iris: 20};
+/** sound played with each transition (none for the quiet ones) */
+const TR_SFX: Partial<Record<Tr, SfxName>> = {push: 'whoosh', up: 'whoosh', zoom: 'whoosh', whip: 'whip', wipe: 'swish', iris: 'swish', flash: 'thud'};
 const LAYERED = new Set<Tr>(['fade', 'slow', 'push', 'up', 'zoom', 'wipe', 'whip', 'iris']);
 
 const layer = (style: React.CSSProperties, child: React.ReactNode, key: string) => (
@@ -62,8 +65,9 @@ const styles = (tr: Tr, p: number, t: number): [React.CSSProperties, React.CSSPr
 /**
  * Each shot renders with its own local time `t` and its full length `d`, so every shot can carry its own
  * camera move. `bg` paints behind the shots (transparent by default, so the look's base shows through).
+ * Moving transitions bring their own sound effect; `sfx={false}` turns that off.
  */
-export const Shots: React.FC<{shots: Shot[]; end: number; bg?: string; edge?: string}> = ({shots, end, bg, edge = 'rgba(255,255,255,0.9)'}) => {
+export const Shots: React.FC<{shots: Shot[]; end: number; bg?: string; edge?: string; sfx?: boolean}> = ({shots, end, bg, edge = 'rgba(255,255,255,0.9)', sfx = true}) => {
   const f = useCurrentFrame();
   const list = [...shots].sort((a, b) => a.at - b.at);
   let i = 0;
@@ -88,6 +92,13 @@ export const Shots: React.FC<{shots: Shot[]; end: number; bg?: string; edge?: st
         <div style={{position: 'absolute', top: 0, bottom: 0, left: `${p * 100}%`, width: 6, marginLeft: -3, background: edge, opacity: clamp01(Math.sin(p * Math.PI) * 2)}} />
       ) : null}
       {flash > 0 ? <div style={{position: 'absolute', inset: 0, background: '#fff6e6', opacity: flash}} /> : null}
+      {/* every shot's transition sound is always mounted, so it plays out even after the cut */}
+      {sfx
+        ? list.slice(1).map((sh, k) => {
+            const name = TR_SFX[sh.tr ?? 'fade'];
+            return name ? <Sfx key={k} at={sh.at - 3} name={name} volume={0.7} /> : null;
+          })
+        : null}
     </div>
   );
 };
