@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {renderStill} from '@remotion/renderer';
-import {cueFrame, open, root, starts} from './timeline.mjs';
+import {browserExecutable, cueFrame, open, root, starts} from './timeline.mjs';
 
 const args = process.argv.slice(2);
 if (!args.length) {
@@ -18,6 +18,6 @@ for (const a of args) {
   if (!(id in starts)) throw new Error(`unknown scene ${id}`);
   const frame = starts[id] + cueFrame(id, cue) + Number(off);
   const output = path.join(outDir, `${id}_${cue}_${off}.png`);
-  await renderStill({composition, serveUrl, output, frame, scale: 0.5});
+  await renderStill({composition, serveUrl, output, frame, scale: 0.5, browserExecutable});
   console.log(output);
 }

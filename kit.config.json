@@ -17,6 +17,18 @@
     "leadOverride": {},
     "tailOverride": {}
   },
+  "brand": {
+    "name": "explainer-kit",
+    "accent": null,
+    "accent2": null
+  },
+  "theme": {},
+  "formats": {
+    "9x16": {"width": 1080, "height": 1920, "zoom": 1},
+    "1x1": {"width": 1080, "height": 1080, "zoom": 1}
+  },
+  "sfx": {"volume": 0.5},
+  "music": {"bpm": 96},
   "fonts": {
     "sans": {
       "family": "NotoSansSC",

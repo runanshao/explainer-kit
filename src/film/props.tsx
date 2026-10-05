@@ -56,7 +56,8 @@ export const Desk: React.FC<{tone?: 'warm' | 'cold'; lx?: number; ly?: number}> 
   />
 );
 
-export type DocRow = {k: React.ReactNode; v?: string; at?: number; mark?: boolean; strike?: boolean};
+/** `strike`: true = struck through from the start; a number = the shot-local frame at which a pen line crosses it out */
+export type DocRow = {k: React.ReactNode; v?: string; at?: number; mark?: boolean; strike?: boolean | number};
 
 /** Typed document: title, optional kicker, rows revealed one by one (each row's `at`, else staggered from `at`). */
 export const Doc: React.FC<{
@@ -79,22 +80,26 @@ export const Doc: React.FC<{
     {rows.map((r, i) => {
       const rowAt = r.at ?? at + 10 + i * 8;
       const p = ease(t, rowAt, 12);
+      const sp = r.strike === true ? 1 : typeof r.strike === 'number' ? ease(t, r.strike, 9) : 0;
       return (
         <div
           key={i}
           style={{
+            position: 'relative',
             display: 'flex',
             justifyContent: 'space-between',
             gap: 24,
             fontSize: size,
             margin: '12px 0',
-            opacity: p,
+            opacity: p * (1 - sp * 0.35),
             transform: `translateX(${(1 - p) * -14}px)`,
-            textDecoration: r.strike ? 'line-through' : undefined,
           }}
         >
           <span>{r.mark ? <Mark t={t} at={rowAt + 8}>{r.k}</Mark> : r.k}</span>
           {r.v ? <span style={{fontWeight: 800, fontVariantNumeric: 'tabular-nums'}}>{r.v}</span> : null}
+          {sp > 0 ? (
+            <div style={{position: 'absolute', left: -8, top: '52%', height: 3, width: `calc(${sp * 100}% + 16px)`, background: C.stamp, borderRadius: 2, transform: `rotate(${-0.6 + i * 0.35}deg)`, transformOrigin: 'left center'}} />
+          ) : null}
         </div>
       );
     })}

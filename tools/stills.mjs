@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {renderStill} from '@remotion/renderer';
-import {FPS, IDS, T, cueFrame, open, root, sceneLen, starts} from './timeline.mjs';
+import {FPS, IDS, T, browserExecutable, cueFrame, open, root, sceneLen, starts} from './timeline.mjs';
 
 const OFF = Number(process.env.OFF ?? Math.round(2.5 * FPS));
 const only = process.argv.slice(2);
@@ -18,7 +18,7 @@ for (const id of IDS) {
   frames.push(['end', len - 20]);
   for (const [k, fr] of frames) {
     const output = path.join(outDir, `${id}_${k}.png`);
-    await renderStill({composition, serveUrl, output, frame: starts[id] + fr, scale: 0.5});
+    await renderStill({composition, serveUrl, output, frame: starts[id] + fr, scale: 0.5, browserExecutable});
     console.log(output);
   }
 }
