@@ -1,0 +1,18 @@
+{
+  "id": "Promo",
+  "width": 1080,
+  "height": 1920,
+  "bpm": 128,
+  "key": "Am",
+  "loudness": {"target": -14, "ceiling": -2.6},
+  "brand": {"name": "explainer-kit", "tagline": "旁白就是时间轴", "cta": "github.com/runanshao/explainer-kit"},
+  "scenes": [
+    {"id": "p1", "bars": 1.5, "energy": "intro", "cues": {"a": "0:1", "b": "0:2", "c": "0:3", "drop": "1:0"}},
+    {"id": "p2", "bars": 1, "energy": "groove", "cues": {"b0": "0:0", "b1": "0:1", "b2": "0:2", "b3": "0:3"}},
+    {"id": "p3", "bars": 0.5, "energy": "groove", "in": {"tr": "cut"}, "cues": {"go": "0:0"}},
+    {"id": "p4", "bars": 1, "energy": "break", "in": {"tr": "flood", "beats": 1}, "cues": {"col": "0:0", "say": "0:1", "tag": "0:2"}},
+    {"id": "p5", "bars": 1, "energy": "groove", "in": {"tr": "wipe", "beats": 0.5}, "cues": {"in": "0:0", "s1": "0:1", "s2": "0:1.5", "s3": "0:2", "s4": "0:2.5", "s5": "0:3"}},
+    {"id": "p6", "bars": 1, "energy": "build", "in": {"tr": "cut"}, "cues": {"bands": "0:0", "fold": "0:2", "ring": "0:2", "hush": "0:3"}},
+    {"id": "p7", "bars": 2, "energy": "drop", "in": {"tr": "cut"}, "cues": {"drop": "0:0", "word": "0:2", "tag": "0:3", "cta": "1:0", "last": "1:3"}}
+  ]
+}

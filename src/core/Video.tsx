@@ -3,42 +3,17 @@
  * Scenes are always authored on the main WIDTH × HEIGHT canvas; for the extra formats in kit.config.json
  * ("9x16", "1x1"…) the shell fits that picture into the taller frame with a title band above and big captions below.
  */
-import React, {useEffect, useState} from 'react';
-import {AbsoluteFill, Audio, continueRender, delayRender, interpolate, Sequence, staticFile, useCurrentFrame} from 'remotion';
+import React from 'react';
+import {AbsoluteFill, Audio, interpolate, Sequence, staticFile, useCurrentFrame} from 'remotion';
 import {HEIGHT, WIDTH} from '../config';
 import {CFG, FPS} from '../config';
 import {SCENES} from '../scenes';
 import type {ChapterProps, Look, SubtitleStyle} from './look';
 import {C, FONT, inkOn, lum} from './theme';
 import {SCENE_IDS, SceneProvider, TIMINGS, audioOf, leadOf, sceneFrames, sceneStarts} from './timeline';
+import {fontCss, useFonts} from './fonts';
 
 const STARTS = sceneStarts();
-
-const faceCss = (f: {family?: string; file?: string; weight?: string}) =>
-  f.family && f.file
-    ? `@font-face { font-family: "${f.family}"; src: url("${staticFile(`fonts/${f.file}`)}") format("truetype"); font-weight: ${f.weight ?? '100 900'}; }`
-    : '';
-
-const fontCss = `
-${faceCss(CFG.fonts.sans)}
-${faceCss(CFG.fonts.serif)}
-.katex { font-size: 1em !important; }
-`;
-
-/** Hold rendering until the fonts are in (or have failed — then the system fallbacks in FONT are used). */
-const useFonts = () => {
-  const [handle] = useState(() => delayRender('fonts'));
-  useEffect(() => {
-    const fams = [CFG.fonts.sans.family, CFG.fonts.serif.family].filter(Boolean);
-    Promise.allSettled([
-      ...fams.flatMap((fam) => [document.fonts.load(`400 40px "${fam}"`, '字体'), document.fonts.load(`800 40px "${fam}"`, '字体')]),
-      document.fonts.load('40px KaTeX_Main', 'x'),
-      document.fonts.load('italic 40px KaTeX_Math', 'x'),
-      document.fonts.load('40px KaTeX_Size1', '('),
-      document.fonts.load('40px KaTeX_Size2', '('),
-    ]).then(() => continueRender(handle));
-  }, [handle]);
-};
 
 const DefaultChapter: React.FC<ChapterProps> = ({f, lead, kicker, title}) => {
   const op = interpolate(f, [0, 8, lead - 10, lead], [0, 1, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});

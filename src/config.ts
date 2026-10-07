@@ -20,8 +20,10 @@ export type KitConfig = {
   /** per-pack palette overrides, e.g. {"neon": {"cyan": "#00FFC2"}} */
   theme: Record<string, Record<string, string>>;
   /** extra output formats besides the main width × height; each becomes a composition "<id>-<key>" */
-  formats: Record<string, {width: number; height: number; zoom?: number}>;
+  formats: Record<string, {width: number; height: number; zoom?: number; loudness?: number}>;
   sfx: {volume: number};
+  /** mastering target (LUFS) and limiter ceiling (dBFS) for tools/mix.py; a format may override the target */
+  loudness?: {target: number; ceiling: number};
   music: {bpm: number};
   fonts: {sans: FontEntry; serif: FontEntry; mono: FontEntry};
 };

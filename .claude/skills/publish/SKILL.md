@@ -29,6 +29,9 @@ publish 会在渲染前先跑 `tools/verify.mjs`（验收不过就停，不会�
 
 - 渲染一定要 `--gl=angle`（`tools/render.mjs` 已带上），纯软件 GL 慢约 5 倍。
 - 超过 10 分钟的渲染脱离终端跑并看日志：Git Bash `nohup node tools/publish.mjs --formats all > out/publish.log 2>&1 &`；PowerShell 用 `Start-Process` 并重定向输出。
-- edge-tts 原始响度只有约 -24 LUFS，必须经过 `tools/mix.py`（publish 已包含）到 -16 LUFS。
+- edge-tts 原始响度只有约 -24 LUFS，必须经过 `tools/mix.py`（publish 已包含）。它用 `tools/master.py` 做两遍线性母带（测 → 加增益 → 限幅 → 再测），目标是 `kit.config.json` 的 `loudness.target`（默认 -16），某个画幅可以单独设（`formats.9x16.loudness`，默认 -14，给短视频平台）。真峰值在编码后的 AAC 上测，超过 -1 dBTP 会自动降天花板重做。
+- 出片后跑 `python tools/audio-report.py out/<id>-mixed.mp4 --target -16` 看分段响度和波形。
+- 渲染报 `kill EBADF`、而且只在范围里有音频时才崩：是某个 WAV 用 Python `wave` 模块写的（最简文件头）。用 `tools/kit.py` 的 `wav_bytes()` 重写；`pytest` 会查出 `public/` 里不合格的 WAV。
+- 没有旁白的短片、广告用 `node tools/promo.mjs`（见 `new-promo` skill）。
 - 只重做某几场的配音：`python tts/gen.py s03 s05`，其他场沿用旧时间轴；然后 `publish --skip-tts`。
 - 换了真配音后 cue 位置都会变，交付前按 `review` skill 再审一遍。

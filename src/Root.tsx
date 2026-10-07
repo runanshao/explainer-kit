@@ -4,6 +4,8 @@ import {CFG} from './config';
 import {Strip, type StripProps, stripTile} from './core/Strip';
 import {totalFrames} from './core/timeline';
 import {Video} from './core/Video';
+import {PROMO, PFPS, promoFrames} from './promo/grid';
+import {Promo} from './promo/Promo';
 
 const frames = Math.max(1, totalFrames());
 
@@ -30,5 +32,7 @@ export const Root: React.FC = () => (
         return {width: Math.round(cols * t.w), height: Math.round(Math.ceil(props.frames.length / cols) * t.h)};
       }}
     />
+    {/* the beat-timed promo (promo/promo.json): its own size, timed by the bar grid instead of narration */}
+    <Composition id={PROMO.id} component={Promo} durationInFrames={promoFrames()} fps={PFPS} width={PROMO.width} height={PROMO.height} />
   </>
 );

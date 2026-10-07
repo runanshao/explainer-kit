@@ -20,7 +20,6 @@ import json
 import re
 import subprocess
 import sys
-import wave
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -186,12 +185,26 @@ def finish_scene(sc, built, dur: float, audio: str):
     }
 
 
+def wav_bytes(pcm: bytes, rate: int, channels: int = 1, width: int = 2) -> bytes:
+    """A PCM WAV file with a LIST/INFO chunk between "fmt " and "data".
+
+    Python's wave module writes the minimal 44-byte header (data right after fmt). Remotion 4.0.532 on Windows crashes
+    the whole render when it pulls such a file in as <Audio> (the error surfaces only as "kill EBADF"); the same samples
+    with an INFO chunk — what ffmpeg writes — render fine. So every WAV the scenes play is written through here.
+    """
+    import struct
+
+    tag = b"explainer-kit\x00"
+    info = b"INFO" + b"ISFT" + struct.pack("<I", len(tag)) + tag
+    fmt = b"fmt " + struct.pack("<IHHIIHH", 16, 1, channels, rate, rate * channels * width, channels * width, width * 8)
+    body = b"WAVE" + fmt + b"LIST" + struct.pack("<I", len(info)) + info + b"data" + struct.pack("<I", len(pcm)) + pcm
+    if len(pcm) % 2:
+        body += b"\x00"
+    return b"RIFF" + struct.pack("<I", len(body)) + body
+
+
 def write_wav(path: Path, pcm: bytes):
-    with wave.open(str(path), "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(SR)
-        wf.writeframes(bytes(pcm))
+    path.write_bytes(wav_bytes(bytes(pcm), SR))
 
 
 # ───────────────────────── real edge-tts ─────────────────────────

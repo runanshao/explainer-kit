@@ -24,10 +24,11 @@
   },
   "theme": {},
   "formats": {
-    "9x16": {"width": 1080, "height": 1920, "zoom": 1},
+    "9x16": {"width": 1080, "height": 1920, "zoom": 1, "loudness": -14},
     "1x1": {"width": 1080, "height": 1080, "zoom": 1}
   },
   "sfx": {"volume": 0.5},
+  "loudness": {"target": -16, "ceiling": -2.0},
   "music": {"bpm": 96},
   "fonts": {
     "sans": {
