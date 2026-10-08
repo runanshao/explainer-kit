@@ -1,0 +1,9 @@
+{
+  "width": 400,
+  "height": 400,
+  "source": "hand-drawn demo mark (replace with python tools/trace-logo.py your-logo.png)",
+  "parts": [
+    {"name": "ring", "fill": "#F3F0E6", "d": "M200 10 A190 190 0 1 1 199.99 10 Z M200 82 A118 118 0 1 0 200.01 82 Z"},
+    {"name": "play", "fill": "#FF5B1F", "d": "M168 138 Q160 133 160 143 L160 257 Q160 267 168 262 L262 206 Q270 200 262 194 Z"}
+  ]
+}

@@ -14,5 +14,5 @@
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true
   },
-  "include": ["src", "kit.config.json"]
+  "include": ["src", "kit.config.json", "promo/promo.json"]
 }

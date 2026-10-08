@@ -6,6 +6,10 @@
 // 2. sources      pytest: script.json ↔ timings.json ↔ audio ↔ scene registry ↔ sound library, parser rules
 // 3. every scene  renders at its start, middle and end in every format (a missing cue/word throws here, not mid-render)
 // 4. determinism  the same frames rendered twice are byte-identical (no Math.random, no clock, no leftover state)
+// 5. promo        the beat-timed promo (promo/promo.json) as it will be watched: frame 0 carries a hook, and on frame 0,
+//                 every cue once settled, the cover and the last frame, all copy sits inside the platform safe area
+//                 (promo.json "safe", measured by src/core/probe.tsx) → out/verify/promo.png, transitions included
+// 6. promo det.   two promo frames rendered twice are byte-identical
 // Writes out/verify/*.png for a look; exits non-zero on the first failing stage.
 import {spawnSync} from 'node:child_process';
 import crypto from 'node:crypto';
@@ -13,6 +17,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {renderStill, selectComposition} from '@remotion/renderer';
 import {CFG, IDS, browserExecutable, leadOf, narrEnd, open, root, starts} from './timeline.mjs';
+import {PROMO, cueAbs, reviewSpots, total as promoTotal} from './promo-grid.mjs';
+import {openProbe, problems} from './promo-probe.mjs';
 
 const quick = process.argv.includes('--quick');
 const outDir = path.join(root, 'out/verify');
@@ -87,6 +93,40 @@ if (!quick) {
     };
     const [a, b] = [await hash('a'), await hash('b')];
     if (a !== b) throw new Error('the same frames rendered differently twice — look for Math.random(), Date, or state kept between frames (out/verify/det_a.png vs det_b.png)');
+    return 'identical';
+  });
+
+  // the promo, rendered frame by frame from the real composition (see tools/promo-sheet.mjs for why not a <Freeze> strip)
+  const promo = await open(PROMO.id);
+  const promoFrame = async (fr, output) => {
+    await renderStill({composition: promo.composition, serveUrl: promo.serveUrl, output, frame: fr, scale: 0.25, browserExecutable});
+    return output;
+  };
+  await stage('5 promo reads on a phone', async () => {
+    const spots = reviewSpots();
+    const probe = await openProbe();
+    const tiles = [];
+    const found = [];
+    for (const sp of spots) {
+      const png = path.join(outDir, `promo_${String(sp.frame).padStart(4, '0')}.png`);
+      const p = problems(sp, await probe(sp.frame, png));
+      for (const x of p) found.push(`${sp.label} (frame ${sp.frame}): ${x}`);
+      tiles.push(`${png}|${p.length ? '✖ ' : ''}${sp.label} ${sp.frame}`);
+    }
+    // no shell here: the "file|label" arguments contain a pipe
+    const r = spawnSync(py, [path.join(root, 'tools/tile.py'), path.join(outDir, 'promo.png'), '8', ...tiles], {encoding: 'utf8'});
+    if (r.status !== 0) throw new Error(`tile.py failed: ${r.stderr}`);
+    for (const f of new Set(tiles.map((t) => t.split('|')[0]))) fs.rmSync(f);
+    if (found.length) throw new Error(`${found.length} problem(s), outlined in out/verify/promo.png:\n    ${found.join('\n    ')}`);
+    return `${spots.length} frames, copy inside the safe area → out/verify/promo.png`;
+  });
+  await stage('6 promo determinism', async () => {
+    const first = PROMO.scenes[0];
+    for (const fr of [cueAbs(first.id, Object.keys(first.cues).pop()), promoTotal - 2]) {
+      const h = [];
+      for (const tag of ['a', 'b']) h.push(crypto.createHash('sha256').update(fs.readFileSync(await promoFrame(fr, path.join(outDir, `promo_det_${tag}.png`)))).digest('hex'));
+      if (h[0] !== h[1]) throw new Error(`promo frame ${fr} rendered differently twice (out/verify/promo_det_a.png vs _b.png)`);
+    }
     return 'identical';
   });
 }

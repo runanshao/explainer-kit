@@ -7,11 +7,10 @@ Scenes place them with <Sfx at={frame} name="pop" /> (src/core/Sfx.tsx); `Shots`
 The files are small and committed, so Studio has sound out of the box; rerun this after tweaking a recipe.
 """
 import sys
-import wave
 
 import numpy as np
 
-from kit import ROOT
+from kit import ROOT, wav_bytes
 
 SR = 44100
 OUT = ROOT / "public" / "sfx"
@@ -174,6 +173,61 @@ def draw():
     return 0.6 * hp(lp(noise(dur), 6000), 1800) * strokes * shape
 
 
+# ── for the promo: hits that land on the beat and swells that peak on it ──
+
+def impact():
+    """trailer hit: sub drop, crack and a low thump (the downbeat of a drop)"""
+    t = t_(1.4)
+    sub = np.sin(sweep(100, 30, t, 2.5)) * env(t, 0.002, 0.4)
+    crack = lp(noise(1.4), 5000) * env(t, 0.0005, 0.035)
+    thump = lp(noise(1.4), 180) * env(t, 0.002, 0.07) * 3
+    return np.tanh((sub + crack + thump) * 1.4)
+
+
+def riser():
+    """1.5 s noise swell with a rising tone; place it so it ends on the downbeat (at = downbeat - 45 frames at 30 fps)"""
+    dur = 1.5
+    t = t_(dur)
+    k = t / dur
+    nz = hp(lp(noise(dur), 300 * (8000 / 300) ** k), 200)
+    tone = np.sin(2 * np.pi * np.cumsum(180 + 1600 * k ** 2) / SR) * 0.25
+    return (nz * 1.3 + tone) * k ** 2.4 * np.clip((dur - t) / 0.01, 0, 1)
+
+
+def revcrash():
+    """reversed cymbal, 0.5 s, swelling into the downbeat (at = downbeat - 15 frames)"""
+    t = t_(1.2)
+    crash = hp(noise(1.2), 4000) * np.exp(-t * 2.2)
+    rev = crash[::-1][-int(0.5 * SR):]
+    return rev * np.linspace(0, 1, len(rev)) ** 2
+
+
+def shimmer():
+    """quick bell arpeggio (a logo drawing itself, a sparkle)"""
+    out = np.zeros(int(0.8 * SR))
+    for i, m in enumerate([84, 88, 91, 96, 100, 103]):
+        t = t_(0.35)
+        tone = (np.sin(2 * np.pi * hz(m) * t) + 0.25 * np.sin(2 * np.pi * hz(m) * 2.76 * t)) * env(t, 0.001, 0.08)
+        i0 = int(i * 0.06 * SR)
+        out[i0:i0 + len(tone)] += tone[: len(out) - i0]
+    return 0.5 * out
+
+
+def rush():
+    """liquid rushing in, with a few bubbles (the flood transition)"""
+    dur = 0.6
+    t = t_(dur)
+    k = t / dur
+    body = lp(noise(dur), 200 * (2600 / 200) ** k) * np.sin(np.pi * np.clip(k, 0, 1)) ** 1.5 * 1.8
+    for c in rng.uniform(0.1, 0.5, 9):
+        tb = t_(0.05)
+        f0 = rng.uniform(600, 1400)
+        pop = np.sin(2 * np.pi * np.cumsum(f0 * (1 + 1.5 * tb / 0.05)) / SR) * env(tb, 0.001, 0.012)
+        i0 = int(c * SR)
+        body[i0:i0 + len(pop)] += 0.4 * pop[: len(body) - i0]
+    return body
+
+
 SOUNDS = {
     "click": click,
     "pop": pop,
@@ -189,6 +243,11 @@ SOUNDS = {
     "glitch": glitch,
     "chime": chime,
     "draw": draw,
+    "impact": impact,
+    "riser": riser,
+    "revcrash": revcrash,
+    "shimmer": shimmer,
+    "rush": rush,
 }
 
 
@@ -198,11 +257,7 @@ def write(name, y):
     y[-fade:] *= np.linspace(1, 0, fade)
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / f"{name}.wav"
-    with wave.open(str(path), "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(SR)
-        wf.writeframes((y * 32767).astype(np.int16).tobytes())
+    path.write_bytes(wav_bytes((y * 32767).astype(np.int16).tobytes(), SR))
     return path
 
 

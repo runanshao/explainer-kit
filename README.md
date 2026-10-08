@@ -1,10 +1,10 @@
 # explainer-kit
 
-用 Remotion 做讲解视频的模板。旁白写在 `tts/script.json` 里，用 `[[cue]]` 标出动画触发点；edge-tts 合成语音时记下每个词的出口时间，生成 `src/timings.json`。场景代码只问「这个 cue 在第几帧」「这个词在第几帧」，不写死任何秒数，所以改旁白、重跑语音之后，动画和字幕自动跟上。
+用 Remotion 做讲解视频和短片广告的模板。讲解片的旁白写在 `tts/script.json` 里，用 `[[cue]]` 标出动画触发点；edge-tts 合成语音时记下每个词的出口时间，生成 `src/timings.json`。场景代码只问「这个 cue 在第几帧」「这个词在第几帧」，不写死任何秒数，所以改旁白、重跑语音之后，动画和字幕自动跟上。没有旁白的 15 秒短片和广告走另一条时间线：`promo/promo.json` 写节拍和小节，画面的每个重拍和配乐的鼓点落在同一张节拍网格上（见「短片模式」）。
 
-仓库自带一支约 3 分钟的演示片（9 场），每场换一套风格包：`film`（电影）、`slides`（幻灯片 + KaTeX 公式）、`paper`（手绘笔记）、`neon`（霓虹终端）、`editorial`（杂志排版）、`math`（数学推导）、`keynote`（发布会）、`pixel`（像素游戏）、`ink`（水墨）。演示片的时间轴和音频是用 `--mock` 生成的静音占位，克隆下来不用联网合成就能预览。
+仓库自带一支约 3 分钟的演示片（9 场），每场换一套风格包：`film`（电影）、`slides`（幻灯片 + KaTeX 公式）、`paper`（手绘笔记）、`neon`（霓虹终端）、`editorial`（杂志排版）、`math`（数学推导）、`keynote`（发布会）、`pixel`（像素游戏）、`ink`（水墨）。演示片的时间轴和音频是用 `--mock` 生成的静音占位，克隆下来不用联网合成就能预览。另有一支 15 秒竖屏短片 `Promo`（7 场，128 BPM，8 小节），用 `punch` 风格包给模板自己做的宣传片，`node tools/promo.mjs` 一条命令出带配乐、母带处理过的成片。
 
-先读 [`docs/principles.md`](docs/principles.md)：六条原理讲清楚这个模板为什么这样设计，看懂它，后面的组件和工具都能推出来。
+先读 [`docs/principles.md`](docs/principles.md)：八条原理讲清楚这个模板为什么这样设计，看懂它，后面的组件和工具都能推出来。
 
 ## 快速开始
 
@@ -17,7 +17,7 @@ npm run studio          # 打开 Remotion Studio，直接看演示片（静音�
 
 ```bash
 npm run fonts                       # 下载 Noto Sans SC / Noto Serif SC 可变字体到 public/fonts/（OFL，不进仓库）
-pip install -r requirements.txt     # edge-tts、numpy、Pillow、pytest
+pip install -r requirements.txt     # edge-tts、numpy、scipy、Pillow、pytest（potracer 只在描 logo 时用）
 python tts/gen.py                   # 真 edge-tts，需要联网和 ffmpeg；写 public/audio/*.mp3 + src/timings.json
 ```
 
@@ -27,7 +27,8 @@ python tts/gen.py                   # 真 edge-tts，需要联网和 ffmpeg；�
 
 | 路径 | 作用 |
 |---|---|
-| `kit.config.json` | 唯一配置：合成 ID、尺寸、帧率、旁白音色与语速、引语音色、停顿时长、字幕行长、`--mock` 语速、每场前后留白、品牌色、画幅、音效音量、配乐节拍、字体 |
+| `kit.config.json` | 讲解片的唯一配置：合成 ID、尺寸、帧率、旁白音色与语速、引语音色、停顿时长、字幕行长、`--mock` 语速、每场前后留白、品牌色、画幅、音效音量、配乐节拍、响度、字体 |
+| `promo/promo.json` | 短片的唯一配置：尺寸、bpm、调性、响度目标、品牌文案、每场小节数 / 能量 / 转场 / cue（「小节:拍」） |
 | `tts/script.json` | 旁白稿，每场一个 `{id, chapter, text}` |
 | `tts/gen.py` | 旁白 → 音频 + `src/timings.json`；`--mock` 离线估算 |
 | `src/core/` | 与风格无关的核心：时间轴 API、动效词汇（`motion.ts`）、跟旁白同步的文字（`Spoken`）、镜头与转场（`Shots`）、`Video` 外壳、布局助手、`Tex`、配色与字体栈 |
@@ -40,11 +41,14 @@ python tts/gen.py                   # 真 edge-tts，需要联网和 ffmpeg；�
 | `src/keynote/` | 发布会风格包（可删） |
 | `src/pixel/` | 像素游戏风格包（可删） |
 | `src/ink/` | 水墨风格包（可删） |
+| `src/punch/` | 动态排版风格包：砸字、拆色故障、跑马灯、环形徽章、商品轮播、图案填字、logo 揭示、CTA 条（可删） |
+| `src/promo/` | 短片：节拍网格（`grid.ts`）、外壳和转场（`Promo.tsx`）、演示短片的 7 场（`scenes/`） |
+| `src/brand/logo.json` | 品牌 logo 的矢量部件（`tools/trace-logo.py` 生成；仓库里是手画的演示标志） |
 | `src/scenes/` | 你的场景；`index.ts` 是登记表 |
-| `tools/` | 一键出片、新建场景/风格包、审图、拼帧、听音效、配乐、混音、音效合成、下载字体 |
+| `tools/` | 一键出片、新建场景/风格包、审图、拼帧、听音效、配乐、混音、母带、响度报告、音效合成、描 logo、广告文案检查、下载字体 |
 | `public/fx/` | 胶片颗粒和纸张纹理 |
 | `public/sfx/` | 音效库（`tools/sfx.py` 合成，无版权问题） |
-| `.claude/skills/` | 给 Claude Code 的项目 skill：写一场、审片、新风格包、出片 |
+| `.claude/skills/` | 给 Claude Code 的项目 skill：写一场、审片、新风格包、出片、做短片 |
 
 ## 配置 `kit.config.json`
 
@@ -59,9 +63,10 @@ python tts/gen.py                   # 真 edge-tts，需要联网和 ffmpeg；�
 | `pace.lead` / `pace.tail` | 每场旁白前（放章节卡）和旁白后的留白帧数；`leadOverride` / `tailOverride` 按场覆盖 |
 | `brand` | `name`（片尾、跑马灯里的名字）；`accent` / `accent2`（#rrggbb，填了就替换所有风格包的主色和副色，`null` 保留各包原色） |
 | `theme` | 按包微调单个颜色，例如 `{"neon": {"cyan": "#00FFC2"}}`，键名见各包调色板（`C` `P` `N` `E` `M` `K` `PX` `I`） |
-| `formats` | 额外画幅，每个会多一个合成 `<id>-<键名>`：默认 `9x16`（1080×1920）和 `1x1`（1080×1080）；`zoom` > 1 时放大画面、裁掉两侧 |
+| `formats` | 额外画幅，每个会多一个合成 `<id>-<键名>`：默认 `9x16`（1080×1920）和 `1x1`（1080×1080）；`zoom` > 1 时放大画面、裁掉两侧；`loudness` 覆盖这个画幅的响度目标（默认竖屏 -14） |
 | `sfx.volume` | 音效总音量（0–1） |
 | `music.bpm` | 配乐节拍；场景里 `useBeat()` 用同一个节拍网格 |
+| `loudness` | `tools/mix.py` 的母带目标：`target`（LUFS，默认 -16）和限幅天花板 `ceiling`（dBFS，默认 -2.0，给 AAC 编码留余量） |
 | `fonts` | `sans` / `serif` / `mono` 的字体名、文件、下载地址和后备字体 |
 
 `src/Root.tsx`、`tools/*.mjs`、`tools/*.py`、`tts/gen.py` 都从这里读，不要在别处写死这些值。
@@ -175,11 +180,66 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
    听音效：`node tools/listen.mjs s05` 渲染这一场的音轨，列出每个声音离哪个 cue 多少帧；看全片：`node tools/overview.mjs`（`--format 9x16` 看竖屏）。
 5. **渲染**：`npm run render`（带 `--gl=angle`）→ `out/<id>.mp4`；竖屏 `npm run render -- 9x16` → `out/<id>-9x16.mp4`。
 6. **配乐**：`python tools/music.py` → `out/music.wav`。按 timings 每场一段和声，每个章节开头一声轻击，重配音后重跑即可对齐。
-7. **混音**：`python tools/mix.py` → `out/<id>-mixed.mp4`（竖屏 `python tools/mix.py 9x16`）。配乐低通后按旁白做 sidechain 压缩，再整体 `loudnorm=I=-16:TP=-1.5:LRA=11`。
+7. **混音**：`python tools/mix.py` → `out/<id>-mixed.mp4`（竖屏 `python tools/mix.py 9x16`）。配乐低通后按旁白做 sidechain 压缩，再交给 `tools/master.py` 做母带：测响度 → 线性加增益 → 前瞻限幅，到 `loudness.target`（横版 -16、竖版 -14 LUFS），并在编码后的文件上确认真峰值 ≤ -1 dBTP（见「声音」）。
+8. **听报告**：`python tools/audio-report.py out/<id>-mixed.mp4` 打印整体和每一场的响度，画出波形和频谱（`out/audio/`）。
 
-交付前：`npm run verify`。依次检查类型、源文件一致（旁白稿 ↔ 时间轴 ↔ 音频 ↔ 登记表 ↔ 音效库）、每场在每种画幅下都能渲染、同一批帧渲染两次逐字节一致。`--quick` 只跑前两项；示意图在 `out/verify/`。
+交付前：`npm run verify`。依次检查类型、源文件一致（旁白稿 ↔ 时间轴 ↔ 音频 ↔ 登记表 ↔ 音效库，短片的节拍网格 ↔ 登记表 ↔ 广告文案）、每场在每种画幅下都能渲染、同一批帧渲染两次逐字节一致，再对短片做同样两关（每个 cue 渲染一帧拼成 `out/verify/promo.png`，两帧各渲染两次比对）。`--quick` 只跑前两项；示意图在 `out/verify/`。
 
 第 2、5、6、7 步可以一条命令跑完：`node tools/publish.mjs`（`--formats 9x16,1x1` 或 `all` 同时出其他画幅，`--skip-tts` 沿用现有配音，`--mock` 离线跑通流程）。
+
+## 短片模式：没有旁白，按节拍走
+
+讲解片的时间来自旁白；15 秒的短视频、广告、品牌片没有旁白，**时间来自配乐的节拍**。这一块是从两条真实的水果店广告里提炼出来的：整条片子按 128 BPM、8 小节设计成正好 15 秒，每一下砸字、每一次硬切、每一个转场都落在鼓点上，音效跟着画面的动作走，最后用 logo 揭示和行动号召收尾。
+
+```bash
+node tools/promo.mjs          # 验收(quick + 安全区) → 渲染 Promo → 按节拍写配乐 → 母带到 -14 LUFS → 响度报告 → 导出封面
+node tools/promo-sheet.mjs    # 按手机上看到的样子审片：第 0 帧、每个 cue 定住后、转场中点、封面，
+                              # 平台 UI 遮挡区涂红，出安全区的字框红 → out/promo/sheet.png
+npm run studio                # 合成 Promo 就是短片
+```
+
+成品是 `out/Promo-mixed.mp4`。
+
+**写稿 `promo/promo.json`**：`bpm`、`key`（配乐调性，`Am`、`C`……）、`width`/`height`（默认竖屏 1080×1920）、`loudness`、`brand`（名字、标语、CTA），以及每一场：
+
+```json
+{"id": "p4", "bars": 1, "energy": "break", "in": {"tr": "flood", "beats": 1, "color": "#FF5B1F"},
+ "cues": {"col": "0:0", "say": "0:1", "tag": "0:2"}}
+```
+
+| 字段 | 含义 |
+|---|---|
+| `bars` | 这一场几小节（4 拍一小节；可以是 1.5，但必须是整拍数） |
+| `energy` | 配乐在这一场怎么编：`intro`（暗的 pad，每个 cue 一下底鼓加人声切片）、`groove`（四踩、拍手、贝斯、拨弦主旋律）、`break`（抽掉底鼓，让下一个重拍更响）、`build`（军鼓滚奏 + 滤波打开，最后一拍留空）、`drop`（完整律动加人声切片，全片最后一拍收在长和弦上） |
+| `in` | 进这一场的转场：`cut`、`iris`（圆形展开）、`wipe`（斜切）、`flood`（液体从下往上涨满，液面在前、新画面跟在后面）、`up`。转场在重拍**之前**播 `beats` 拍，重拍那一帧正好切完；外壳自动配声音 |
+| `cues` | 「小节:拍」，都从 0 数，拍可以有小数（`"0:2.5"` 是第 3 拍的后半拍） |
+
+**写场景**：`src/promo/scenes/p1.tsx`……在 `src/promo/scenes/index.ts` 登记。场景里：
+
+```tsx
+const {f, cue, at, beat, len, every, pulse} = usePromo();
+<Slam at={cue('c')} size={300} split={[PU.sage, PU.sky]}>不将就</Slam>   // 恰好在这一拍砸到位，带拆色故障
+<Sfx at={cue('c')} name="impact" />                                    // 同一帧的声音
+<SfxAt frames={every(0.25)} name="tick" />                             // 每个 16 分音符一下
+```
+
+`f` 以这一场的重拍为 0；转场播放时，外壳把下一场冻结在第 0 帧显示，所以进场动画从 0 开始写。整片跨场的东西（进度条）用 `abs` / `total`。
+
+**素材从哪来**：logo 用 `python tools/trace-logo.py logo.png`（截图也行，自动去掉窗口边框；`--split` 把字标拆成一个个字）描成 `src/brand/logo.json`，`<LogoReveal>` 先描边、再填色泛光、指定部件从上方落下。不要找字体去代替 logo 里的字。广告文案先过 `python tools/copy_lint.py`：「最好」「第一」「唯一」「100%」这类绝对化用语，《广告法》第九条不允许用（只是词表，产地、价格、「每日上新」这类事实还要人确认）。
+
+## 声音：按交付标准量出来
+
+画面有逐帧检查，声音也要有数（`docs/principles.md` 原理 7）。
+
+| 工具 | 做什么 |
+|---|---|
+| `tools/sfx.py` | 音效库，numpy 合成，无版权问题。这次新增给短片用的 `impact`（重拍）、`riser`（1.5 秒上升音，结束在重拍上：`at = 重拍 - 45`）、`revcrash`（0.5 秒反向镲：`at = 重拍 - 15`）、`shimmer`（闪光琶音）、`rush`（液体涌入，`flood` 转场自带） |
+| `tools/synth.py` | 配乐的乐器和总线：分层底鼓、拍手、开闭镲、军鼓、七声部超锯齿、带滤波包络的拨弦、正弦 sub 加锯齿上层的贝斯、共振峰合成的人声切片（ah/oh/eh）、能量归一的卷积混响、按底鼓做的侧链 |
+| `tools/score.py` | 短片配乐：按 `promo.json` 的节拍、调性和每场 `energy` 编曲，写 `out/promo-score.wav`，并按段打印每条总线的 RMS |
+| `tools/master.py` | 母带：测响度 → 线性增益 → 前瞻限幅 → 再测，直到差 0.3 LU 以内；编码成 AAC 后再测真峰值，超过 -1 dBTP 就降天花板重做。`mix.py` 和 `promo.mjs` 都用它 |
+| `tools/audio-report.py` | 整体响度、响度范围、真峰值，每一段的响度条，波形图和频谱图；`--target` 偏离 1 LU 以上或真峰值超标就报错 |
+
+怎么读：总线 RMS 里混响或 pad 比鼓还响，声音一定是糊的；波形是一条平带说明压过头了；铺垫段应该凹下去，重拍应该跳起来；某一场比相邻的响 3 LU，就是那一场的音效没配平。
 
 ## 画幅和品牌
 
@@ -195,11 +255,16 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 |---|---|
 | `node tools/new-scene.mjs s10 --look paper --chapter "…" --text "[[a]]……"` | 追加旁白、生成能直接跑的场景文件（每个 cue 一段跟着旁白出现的字）、登记、跑 mock 时间轴 |
 | `node tools/new-pack.mjs chalk --base "#1F2B26" --accent "#F2C14E"` | 生成一个新风格包骨架：接好品牌色的调色板、会动的背景、章节卡、组件、Look |
-| `node tools/publish.mjs --formats all` | 配音 → 验收 → 各画幅渲染 → 配乐 → 混音 |
-| `npm run verify` | 交付前的验收：类型、源文件一致、每场可渲染、渲染结果可复现 |
+| `node tools/publish.mjs --formats all` | 配音 → 验收 → 各画幅渲染 → 配乐 → 混音 + 母带 |
+| `node tools/promo.mjs` | 短片：验收 + 安全区 → 渲染 → 节拍配乐 → 母带 → 响度报告 → 封面 `out/<id>-cover.png` |
+| `node tools/promo-sheet.mjs` | 短片审片：第 0 帧、每个 cue 定住后、转场中点、封面各一帧，量出安全区外和被切掉的字 |
+| `python tools/trace-logo.py logo.png --split` | 把 logo 图片描成矢量部件（`src/brand/logo.json`） |
+| `python tools/copy_lint.py` | 广告文案的绝对化用语检查 |
+| `python tools/audio-report.py 文件 --target -14` | 响度、真峰值、分段响度、波形和频谱 |
+| `npm run verify` | 交付前的验收：类型、源文件一致、每场可渲染、渲染结果可复现，短片同样两关 |
 | `node tools/strip.mjs` / `overview.mjs` / `listen.mjs` | 审动态 / 看全片 / 听音效 |
 
-`.claude/skills/` 里有四个项目 skill，在 Claude Code 里打开这个仓库就能用：`new-scene`（从文稿到一场）、`review`（审片清单）、`new-style-pack`（新风格包的要求）、`publish`（出片和踩过的坑）。
+`.claude/skills/` 里有五个项目 skill，在 Claude Code 里打开这个仓库就能用：`new-scene`（从文稿到一场）、`review`（审片清单）、`new-style-pack`（新风格包的要求）、`publish`（出片和踩过的坑）、`new-promo`（做一条按节拍走的短片或广告）。
 
 ## 风格包
 
@@ -215,11 +280,13 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 - **ink**（`src/ink/`）：水墨。宣纸底；`Mountains` 几层远山各自从雾里晕开（先模糊后清晰）并缓慢漂移，`Mist` 雾带，`Birds` 飞鸟；`Brush` 带飞白的毛笔笔触；`InkBlot` 墨滴在纸上洇开；`VText` 竖排文字（配 `Spoken` 念到哪里墨落到哪里，`\n` 换列）；`Seal` 红色印章按下。适合讲历史、诗词、传统文化。
 - **editorial**（`src/editorial/`）：杂志排版 / 动态文字。新闻纸底色、黑红两色；`MaskText` 大标题逐行从遮罩下升起（也能逐行升出去）；`Slam` 大数字砸进画面，`hits` 在说到某个词时再顶一下；`Block` 色块推进来再从另一侧推出去（用来遮住换版）；`Rule` 画线；`Label` 小标签；`Ticker` 跑马灯。适合讲观点、金句、数据。
 
+- **punch**（`src/punch/`）：现代动态排版，给短片和广告用，也能放进讲解片的一场。深墨绿底加缓慢漂移的网格；`Slam` 大字在指定帧砸到位（加速进场 + 落地回弹，`split` 加两层拆色故障）；`Mono` 等宽小标签；`Hud` 裁切角标、标签和进度线；`Marquee` 斜着横穿画面的跑马灯条，能沿自身方向冲进来、再折叠收起；`Badge` 绕圈转的环形文字；`CardStrip` 商品卡片轮播，按给定的帧一张张滑过去，高速时带水平运动模糊、停下时清晰；`PatternText` 用流动的图案填满大字；`Wipe` 擦入；`LogoReveal` 描边 → 填色泛光 → 部件落下；`CtaBar` 从底部推上来的行动号召跑马灯。适合广告、短视频开场、金句。
+
 所有包共用 `src/core` 的 `At`（`center` 时居中位移会和你传入的 `transform` 叠加）、`Full`、`Svg`、`DrawLine`、`Tex`、`Shots`、`Spoken` 和动效函数。film 和 slides 的配色在 `src/core/theme.ts`，新包各自带调色板（`P`、`N`、`E`、`M`、`K`、`PX`、`I`）。
 
 字幕样式由风格包的 `look.subtitles` 决定（浅色底的包用 `boxColor` 换成深色底条），单场可以在登记表里覆盖，例如 `s01: {component: S01, look: film, subtitles: {hideQuotes: true}}`：这一场已经把引语大字放在画面上，就不再给引语配字幕。
 
-**选哪套**：叙事、人物用 film；概念、API 用 slides；流程、因果、拆解步骤用 paper；系统、架构、数据流用 neon；观点、金句、关键数字用 editorial；公式推导、函数图像用 math；产品介绍、操作演示用 keynote；轻松科普、儿童向用 pixel；历史、诗词、传统文化用 ink。同一支片子可以按场混用。
+**选哪套**：叙事、人物用 film；概念、API 用 slides；流程、因果、拆解步骤用 paper；系统、架构、数据流用 neon；观点、金句、关键数字用 editorial；公式推导、函数图像用 math；产品介绍、操作演示用 keynote；轻松科普、儿童向用 pixel；历史、诗词、传统文化用 ink；广告、短视频、金句砸字用 punch。同一支片子可以按场混用。
 
 ### 写一个新风格包
 
@@ -266,12 +333,19 @@ const {p, q} = life(f, c('cards'), c('formula'));      // 卡片在 formula 时�
 - **cue 名 `end` 是保留的**（工具里表示旁白结束），`gen.py` 遇到会直接报错。
 - **场景里别用 `Math.random()`**，要随机就用 film 包的 `rng(seed)` 或 Remotion 的 `random(seed)`。渲染是多进程逐帧并行的，同一帧必须画出同样的东西。
 - **edge-tts 偶尔断线**，`gen.py` 每段会重试 10 次，间隔递增。
+- **Python `wave` 模块写的 WAV 会让 Windows 上的渲染崩溃**（Remotion 4.0.532）。它写的是最简 44 字节头，`data` 紧跟在 `fmt` 后面；Remotion 一拉这种文件做 `<Audio>` 就失败，报错只剩一句看不出原因的 `kill EBADF`，而且只在渲染范围里有音频时才出现。同样的采样加一个 `LIST/INFO` 块（ffmpeg 写 WAV 就带）就正常。所以场景要播的 WAV 一律经 `tools/kit.py` 的 `wav_bytes()` 写（`sfx.py`、`gen.py --mock` 已改），`tests/test_promo.py` 会检查 `public/` 里每个 WAV 都带这个块。
+- **审片拼图不能用 `<Freeze>` 冻结带预卷转场的外壳**：短片的转场在重拍前播放，冻结整片会差出几帧，审到的不是成片里那一帧。短片的 `promo-sheet` 和 `verify` 逐帧直接渲染。
+- **Windows 下把 Python 输出重定向到文件时，默认编码是 cp1252**，打印 `→` 这类字符会崩。新加的工具开头都有 `sys.stdout.reconfigure(encoding="utf-8")`。
+- **展示字体要先确认每个字都认得出**。方块、黄油这类风格化中文字体，个别字会认不出来（站酷庆科黄油体的「多」「水」就是），只看字体样张发现不了。上线前把文案里用到的每个字都渲染出来看一遍，认不出的换成思源黑体粗体。
+- **八分音符一张的轮播，卡片要停得住**：滑动只给 4 帧，留 3 帧静止、清晰。整段都在动，观众一个字也读不到。
 
 ## English
 
-explainer-kit is a Remotion template for narrated explainer videos. Narration lives in `tts/script.json` with inline markers: `[[cue]]` marks an animation/shot trigger, `||` inserts a dramatic pause, and `<<key|...>>` reads a quote with an alternate voice. `tts/gen.py` synthesizes each scene with edge-tts, records word boundaries and writes `public/audio/<scene>.mp3` plus `src/timings.json`. Scenes read frames through `useScene()` — `c('cue')`, `w('word')`, `rel('word', 'cue')` — so durations and animations follow the audio after any rewrite.
+explainer-kit is a Remotion template for narrated explainer videos and, since this iteration, for short beat-timed promos without narration. Narration lives in `tts/script.json` with inline markers: `[[cue]]` marks an animation/shot trigger, `||` inserts a dramatic pause, and `<<key|...>>` reads a quote with an alternate voice. `tts/gen.py` synthesizes each scene with edge-tts, records word boundaries and writes `public/audio/<scene>.mp3` plus `src/timings.json`. Scenes read frames through `useScene()` — `c('cue')`, `w('word')`, `rel('word', 'cue')` — so durations and animations follow the audio after any rewrite.
 
-Quick start: `npm i && npm run studio` shows the bundled ~3 min, nine-scene demo (one scene per style pack), whose timings and silent audio were produced by `python tts/gen.py --mock` (no network; word times estimated from character count). `npm run fonts` downloads the Noto Sans SC / Noto Serif SC variable fonts (OFL) into `public/fonts/`; without them the stacks fall back to system fonts. All size, fps, voice, pace and font settings live in `kit.config.json`. Nine optional style packs are included: `film` (letterbox, grain, grade, cue-driven shots, paper props), `slides` (panels, chips, karaoke subtitles), `paper` (hand-drawn strokes that draw on and boil, sticky notes, highlighter), `neon` (scrolling grid floor, scanlines, glowing type, terminal, node graph with flowing pulses, glitch), `editorial` (masked kinetic headlines, slammed numbers, colour-block wipes, ticker), `math` (Manim-style axes, traced plots, sliding tangent, step-by-step TeX), `keynote` (one morphing shape, cursor clicks, liquid glass, screen-studio zoom), `pixel` (320×180 canvas upscaled with hard pixels, walking hero, coins, RPG dialog) and `ink` (ink-wash mountains bleeding through mist, brush strokes, vertical calligraphy, red seal). `src/core/motion.ts` holds a shared motion vocabulary (enter/exit with `life` + `move`, springs, idle `drift`, `punch`, `shake`), `<Spoken>` reveals on-screen text exactly as the narrator says it, and `Shots` cuts on cues with `fade`/`push`/`up`/`zoom`/`wipe`/`whip`/`iris`/`black`/`flash` transitions. `docs/principles.md` explains the six principles behind the design (one time source, frames as pure functions, enter/breathe/exit, looks as clothing, one canvas for all formats, nothing derived is hand-edited); `npm run verify` is the delivery gate (types, source consistency, every scene renders in every format, two renders are byte-identical) and `publish` runs it before rendering. Sound effects are synthesized by `tools/sfx.py` into `public/sfx/` and placed with `<Sfx at={frame} name="pop" />` (moving `Shots` transitions add their own); the score pulses on a `music.bpm` grid that scenes can follow with `useBeat()`. `brand.accent`/`accent2` in `kit.config.json` recolour every pack, `theme.<pack>` overrides single keys, and `formats` adds portrait (9:16) and square (1:1) compositions that lay the 16:9 picture out with a title band, large captions and a progress bar. `tools/publish.mjs` runs TTS → render (all formats) → score → mix in one go; `tools/new-scene.mjs` and `tools/new-pack.mjs` scaffold scenes and style packs; `.claude/skills/` holds Claude Code skills for writing a scene, reviewing, building a pack and publishing. Review with `tools/stills.mjs`, `tools/pick.mjs`, `tools/sheet.py`, `tools/strip.mjs` (a filmstrip of frames around a cue, to judge motion rather than end states), `tools/overview.mjs` (one frame per scene) and `tools/listen.mjs` (renders a range's audio and lists sound events by cue); render with `npm run render` (uses `--gl=angle`); add a synthesized score with `tools/music.py` and mix/normalize to -16 LUFS with `tools/mix.py`.
+Quick start: `npm i && npm run studio` shows the bundled ~3 min, nine-scene demo (one scene per style pack), whose timings and silent audio were produced by `python tts/gen.py --mock` (no network; word times estimated from character count). `npm run fonts` downloads the Noto Sans SC / Noto Serif SC variable fonts (OFL) into `public/fonts/`; without them the stacks fall back to system fonts. All size, fps, voice, pace and font settings live in `kit.config.json`. Nine optional style packs are included: `film` (letterbox, grain, grade, cue-driven shots, paper props), `slides` (panels, chips, karaoke subtitles), `paper` (hand-drawn strokes that draw on and boil, sticky notes, highlighter), `neon` (scrolling grid floor, scanlines, glowing type, terminal, node graph with flowing pulses, glitch), `editorial` (masked kinetic headlines, slammed numbers, colour-block wipes, ticker), `math` (Manim-style axes, traced plots, sliding tangent, step-by-step TeX), `keynote` (one morphing shape, cursor clicks, liquid glass, screen-studio zoom), `pixel` (320×180 canvas upscaled with hard pixels, walking hero, coins, RPG dialog) and `ink` (ink-wash mountains bleeding through mist, brush strokes, vertical calligraphy, red seal). `src/core/motion.ts` holds a shared motion vocabulary (enter/exit with `life` + `move`, springs, idle `drift`, `punch`, `shake`), `<Spoken>` reveals on-screen text exactly as the narrator says it, and `Shots` cuts on cues with `fade`/`push`/`up`/`zoom`/`wipe`/`whip`/`iris`/`black`/`flash` transitions. `docs/principles.md` explains the eight principles behind the design (one time source — the narration or the beat grid, frames as pure functions, enter/breathe/exit, looks as clothing, one canvas for all formats, nothing derived is hand-edited, sound measured to delivery spec, accept the frame as the viewer sees it on a phone); `npm run verify` is the delivery gate (types, source consistency, every scene renders in every format, two renders are byte-identical) and `publish` runs it before rendering. Sound effects are synthesized by `tools/sfx.py` into `public/sfx/` and placed with `<Sfx at={frame} name="pop" />` (moving `Shots` transitions add their own); the score pulses on a `music.bpm` grid that scenes can follow with `useBeat()`. `brand.accent`/`accent2` in `kit.config.json` recolour every pack, `theme.<pack>` overrides single keys, and `formats` adds portrait (9:16) and square (1:1) compositions that lay the 16:9 picture out with a title band, large captions and a progress bar. `tools/publish.mjs` runs TTS → render (all formats) → score → mix in one go; `tools/new-scene.mjs` and `tools/new-pack.mjs` scaffold scenes and style packs; `.claude/skills/` holds Claude Code skills for writing a scene, reviewing, building a pack and publishing. Review with `tools/stills.mjs`, `tools/pick.mjs`, `tools/sheet.py`, `tools/strip.mjs` (a filmstrip of frames around a cue, to judge motion rather than end states), `tools/overview.mjs` (one frame per scene) and `tools/listen.mjs` (renders a range's audio and lists sound events by cue); render with `npm run render` (uses `--gl=angle`); add a synthesized score with `tools/music.py` and mix with `tools/mix.py`, which now masters with `tools/master.py` (measure → linear gain → look-ahead limiter, repeated to within 0.3 LU; true peak checked on the AAC-encoded file and the ceiling lowered if it lands above -1 dBTP) to `loudness.target` (-16 LUFS; a format can override it, 9x16 uses -14).
+
+Promo mode: `promo/promo.json` sets bpm, key, size, loudness and, per scene, a length in bars, an `energy` (intro/groove/break/build/drop), an incoming transition (cut/iris/wipe/flood/up — played before the downbeat so it completes on it) and cues as `bar:beat` positions. Scenes in `src/promo/scenes/` read frames with `usePromo()` (`cue()`, `at()`, `every()`, `pulse()`); `land()`/`squash()` in `motion.ts` make a hit arrive exactly on its frame, `<Burst>` throws deterministic ballistic particles, and the new `punch` style pack provides slammed type with an RGB split, marquee bands, a rotating text badge, a motion-blurred card carousel, pattern-filled type, `LogoReveal` (outline → fill with bloom → parts dropping in) and a CTA bar. `tools/score.py` (with `tools/synth.py`: layered drums, supersaws, plucks, sub bass, formant vocal chops, an energy-normalized convolution reverb, kick sidechain) writes the score on the same grid and prints per-bus RMS per section; `node tools/promo.mjs` renders, scores, masters to -14 LUFS and runs `tools/audio-report.py` (loudness per section, waveform and spectrogram, fails on true peak above -1 dBTP or loudness off target). `tools/trace-logo.py` traces a logo image (screenshots included) into vector parts in `src/brand/logo.json`; `tools/copy_lint.py` flags absolute claims that China's Advertising Law forbids in ad copy; `verify` adds two promo stages. The promo is checked as it is watched: `promo.json` declares the platform safe area (`safe`: status bar, caption line, button rail) and an upload `cover`; `src/core/probe.tsx` measures every readable text box on the rendered frame (after transforms, masks and opacity) and outlines copy outside the safe area or cut by the frame edge; `verify` and `tools/promo-sheet.mjs` probe frame 0 (which must already carry copy), every cue once settled, transition midpoints and the cover, and `promo.mjs` exports `out/<id>-cover.png`. On-screen counts (「十套风格包」, `06 OF 10`) are derived from `PACKS`, which a test checks against the style packs on disk. Python's `wave` module writes minimal-header WAVs that crash Remotion 4.0.532 renders on Windows (`kill EBADF`); every scene WAV is now written with a LIST/INFO chunk via `wav_bytes()` in `tools/kit.py`, and a test enforces it.
 
 ## License
 

@@ -137,3 +137,19 @@ export const rng = (seed: number) => {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 };
+
+// ───────────────────────── landing on a beat ─────────────────────────
+
+/**
+ * Anticipation: 0→1 that *arrives* at frame `at`, accelerating (ease-in), so a slam's impact is exactly on the
+ * cue / beat instead of starting there. Pair it with `squash` and a <Sfx at={at}> — picture and sound hit together.
+ */
+export const land = (f: number, at: number, dur = 5) => tween(f, at - dur, dur, 'in');
+
+/** squash & stretch after an impact at `at`: [scaleX, scaleY], a damped wobble that settles to [1, 1] */
+export const squash = (f: number, at: number, amt = 0.2, dur = 16): [number, number] => {
+  if (f < at || f > at + dur) return [1, 1];
+  const k = (f - at) / dur;
+  const s = amt * Math.exp(-4 * k) * Math.cos(k * Math.PI * 2.4);
+  return [1 + s, 1 - s];
+};

@@ -42,9 +42,28 @@ node tools/listen.mjs s05:block s05:out:30  # 一段
 
 输出每个声音离哪个 cue 多少帧（如 `hit+0`）。`--mock` 时旁白是静音的，列出来的全是音效和配乐节拍。核对：每个点击、落地、砸字都有声音，且偏差在 ±3 帧内；没有意外的长时间噪声。
 
+## 量声音（成片）
+
+```bash
+python tools/audio-report.py out/Explainer-mixed.mp4 --target -16      # 讲解片
+python tools/audio-report.py out/Promo-mixed.mp4 --promo --target -14  # 短片
+```
+
+整体响度要在目标 ±1 LU，真峰值 ≤ -1 dBTP（在编码后的文件上测）。看分段响度：某一场比相邻的响 3 LU 以上，多半是那场音效没配平（演示片 s08 的方波金币就是这样查出来的）；短片的 `break`、`build` 应该比 `groove` 低，`drop` 最响。再看 `out/audio/*_wave.png`：一条平带说明压过头或混响糊了。
+
+## 看短片
+
+```bash
+node tools/promo-sheet.mjs        # 第 0 帧、每个 cue 定住后、转场中点、封面各一格；遮挡区涂红，出安全区的字框红
+node tools/promo-sheet.mjs 230 236 239 243   # 指定帧，看一段动作（比如轮播停没停住）
+```
+
+短片不要用 `<Freeze>` 拼图看（转场有预卷，会差几帧）；这个工具是逐帧直接渲染的。
+
 ## 交付前的检查清单
 
-- `npm run verify` 全部通过（类型、源文件一致、每场每种画幅可渲染、两次渲染逐字节一致）
+- `npm run verify` 全部通过（类型、源文件一致、每场每种画幅可渲染、两次渲染逐字节一致、短片每个 cue 可渲染且可复现）
+- 成片跑过 `audio-report.py`：响度在目标上、真峰值 ≤ -1 dBTP、没有哪一场突然响一截
 - 改过的每场都拼帧看过，主画幅和 9x16 各一遍
 - 音效位置用 `listen` 核对过
 - 真配音（Windows 上 `python tts/gen.py`）后再看一遍：cue 位置会变，写死的帧数会错位

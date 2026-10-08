@@ -104,10 +104,10 @@ export const S08: React.FC = () => {
           }
         }}
       />
-      <SfxAt frames={COINS.map(pickAt)} name="coin" />
+      <SfxAt frames={COINS.map(pickAt)} name="coin" volume={0.45} />
       <SfxAt frames={Array.from({length: 10}, (_, k) => barAt + ((k + 1) * (talk - barAt - 6)) / 10)} name="tick" volume={0.6} />
       <SfxAt frames={lineAt} name="tick" volume={0.35} />
-      <Sfx at={win} name="levelup" />
+      <Sfx at={win} name="levelup" volume={0.55} />
     </Full>
   );
 };

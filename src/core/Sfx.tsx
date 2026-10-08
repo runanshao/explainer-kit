@@ -4,16 +4,20 @@
  * <Sfx at={frame} name="pop" /> plays public/sfx/pop.wav at a scene-local frame (tools/sfx.py synthesizes them).
  * Put them at the top level of a scene, not inside a Shots element: a shot that ends unmounts its sounds mid-play.
  */
-import React from 'react';
+import React, {createContext, useContext} from 'react';
 import {Audio, Sequence, staticFile} from 'remotion';
 import {CFG, FPS} from '../config';
 import {sceneStarts, useScene} from './timeline';
 
-export const SFX = ['click', 'pop', 'whoosh', 'whip', 'swish', 'thud', 'slam', 'tick', 'type', 'coin', 'levelup', 'glitch', 'chime', 'draw'] as const;
+export const SFX = ['click', 'pop', 'whoosh', 'whip', 'swish', 'thud', 'slam', 'tick', 'type', 'coin', 'levelup', 'glitch', 'chime', 'draw', 'impact', 'riser', 'revcrash', 'shimmer', 'rush'] as const;
 export type SfxName = (typeof SFX)[number];
 
+/** silences every <Sfx> below it — for a frozen copy of a scene (e.g. the promo shows the next scene frozen while it wipes in) */
+export const SfxMute = createContext(false);
+
 export const Sfx: React.FC<{at: number; name: SfxName; volume?: number; rate?: number}> = ({at, name, volume = 1, rate}) => {
-  if (!Number.isFinite(at)) return null;
+  const muted = useContext(SfxMute);
+  if (muted || !Number.isFinite(at)) return null;
   return (
     <Sequence from={Math.max(0, Math.round(at))} layout="none" name={`sfx ${name}`}>
       <Audio src={staticFile(`sfx/${name}.wav`)} volume={(CFG.sfx?.volume ?? 0.5) * volume} playbackRate={rate} />
