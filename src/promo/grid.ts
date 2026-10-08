@@ -10,6 +10,7 @@ import {createContext, useContext} from 'react';
 import {useCurrentFrame} from 'remotion';
 import raw from '../../promo/promo.json';
 import {CFG} from '../config';
+import type {SafeArea} from '../core/probe';
 
 export type Transition = 'cut' | 'iris' | 'wipe' | 'flood' | 'up';
 export type PromoScene = {
@@ -30,11 +31,17 @@ export type PromoConfig = {
   bpm: number;
   key: string;
   loudness: {target: number; ceiling: number};
+  /** where the app's own UI (status bar, caption, button rail) leaves the video visible; copy stays inside (src/core/probe.tsx) */
+  safe?: SafeArea;
+  /** "scene:cue" — the frame exported as the upload cover (tools/promo.mjs → out/<id>-cover.png) */
+  cover?: string;
   brand: {name: string; tagline: string; cta: string};
   scenes: PromoScene[];
 };
 
 export const PROMO = raw as unknown as PromoConfig;
+/** 9:16 short-video apps (抖音 / 视频号 / 小红书 / Reels / Shorts) cover roughly these areas of a 1080×1920 frame */
+export const SAFE: SafeArea = PROMO.safe ?? {top: 200, bottom: 1500, left: 60, right: 60, rail: {left: 940, top: 840}};
 export const PFPS = PROMO.fps ?? CFG.fps;
 /** frames per beat (fractional: 128 bpm at 30 fps = 14.0625) */
 export const BEAT = (60 / PROMO.bpm) * PFPS;

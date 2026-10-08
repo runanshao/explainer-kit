@@ -8,7 +8,7 @@ import {usePromo} from '../grid';
 import {PHud} from './common';
 
 export const LOGO = logo as LogoData;
-export const MARK = {x: 540, y: 720, size: 480};
+export const MARK = {x: 540, y: 680, size: 480};
 
 export const P6: React.FC = () => {
   const {f, cue, len} = usePromo();

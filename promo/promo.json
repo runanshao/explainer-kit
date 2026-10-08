@@ -5,9 +5,11 @@
   "bpm": 128,
   "key": "Am",
   "loudness": {"target": -14, "ceiling": -2.6},
+  "safe": {"top": 200, "bottom": 1500, "left": 60, "right": 60, "rail": {"left": 940, "top": 840}},
+  "cover": "p7:last",
   "brand": {"name": "explainer-kit", "tagline": "旁白就是时间轴", "cta": "github.com/runanshao/explainer-kit"},
   "scenes": [
-    {"id": "p1", "bars": 1.5, "energy": "intro", "cues": {"a": "0:1", "b": "0:2", "c": "0:3", "drop": "1:0"}},
+    {"id": "p1", "bars": 1.5, "energy": "intro", "cues": {"a": "0:0", "b": "0:1", "c": "0:2", "drop": "1:0"}},
     {"id": "p2", "bars": 1, "energy": "groove", "cues": {"b0": "0:0", "b1": "0:1", "b2": "0:2", "b3": "0:3"}},
     {"id": "p3", "bars": 0.5, "energy": "groove", "in": {"tr": "cut"}, "cues": {"go": "0:0"}},
     {"id": "p4", "bars": 1, "energy": "break", "in": {"tr": "flood", "beats": 1}, "cues": {"col": "0:0", "say": "0:1", "tag": "0:2"}},

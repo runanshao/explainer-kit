@@ -3,6 +3,8 @@
  * an RGB split, crop-mark HUD, marquee bands, a rotating text badge, a product carousel with motion blur, type filled
  * with a moving pattern, a logo that draws itself and fills, and a CTA bar. Works in narrated scenes (export `punch`
  * is a Look) and in the beat-timed promo (src/promo). Every prop takes scene-local frames. Delete this folder if unused.
+ * Parts that cross the frame edge on purpose (HUD, marquees, badge ring, peeking cards, the CTA's running text) carry
+ * data-copy="free", so the safe-area probe (src/core/probe.tsx) does not count them as copy.
  */
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
@@ -161,7 +163,7 @@ export const Hud: React.FC<{color?: string; left?: string; right?: string; botto
   const {width: W} = useVideoConfig();
   const lab: React.CSSProperties = {position: 'absolute', fontFamily: MONO, fontWeight: 600, fontSize: size, color, letterSpacing: '0.08em', whiteSpace: 'nowrap'};
   return (
-    <AbsoluteFill>
+    <AbsoluteFill data-copy="free">
       <CropMarks color={color} />
       {left ? <div style={{...lab, left: 72, top: 84}}>{left}</div> : null}
       {right ? <div style={{...lab, right: 72, top: 84}}>{right}</div> : null}
@@ -204,6 +206,7 @@ export const Marquee: React.FC<{
   const scroll = -(f - at) * speed * dir;
   return (
     <div
+      data-copy="free"
       style={{
         position: 'absolute',
         left: W / 2 - 1800,
@@ -232,7 +235,7 @@ export const Badge: React.FC<{at: number; x: number; y: number; r: number; text:
   const rot = -120 * (1 - p) + (f - at) * speed;
   const id = `badge-${Math.round(x)}-${Math.round(y)}-${r}`;
   return (
-    <svg style={{position: 'absolute', left: x - r - size, top: y - r - size, overflow: 'visible'}} width={2 * (r + size)} height={2 * (r + size)}>
+    <svg data-copy="free" style={{position: 'absolute', left: x - r - size, top: y - r - size, overflow: 'visible'}} width={2 * (r + size)} height={2 * (r + size)}>
       <g transform={`translate(${r + size} ${r + size}) rotate(${rot}) scale(${0.85 + 0.15 * p})`} opacity={p}>
         <path id={id} d={`M0 ${-r} A${r} ${r} 0 1 1 -0.01 ${-r}`} fill="none" />
         <text fontFamily={MONO} fontWeight={600} fontSize={size} fill={color}>
@@ -268,7 +271,7 @@ export const CardStrip: React.FC<{at: number; steps: number[]; cards: React.Reac
       </svg>
       <div style={{position: 'absolute', left: 0, top: y, width: W, height: h, filter: blur > 0.5 ? `url(#${fid})` : undefined}}>
         {cards.map((c, i) => (
-          <div key={i} style={{position: 'absolute', left: W / 2 - w / 2 + i * (w + gap) + x(f), top: 0, width: w, height: h}}>
+          <div key={i} data-copy={i === Math.round(pos(f)) ? undefined : 'free'} style={{position: 'absolute', left: W / 2 - w / 2 + i * (w + gap) + x(f), top: 0, width: w, height: h}}>
             {c}
           </div>
         ))}
@@ -353,7 +356,7 @@ export const CtaBar: React.FC<{at: number; y: number; text: string; height?: num
   const p = tween(f, at, 12, 'expo');
   return (
     <div style={{position: 'absolute', left: 0, top: y + (1 - p) * (H - y + 20), width: W, height, background: bg, overflow: 'hidden', display: 'flex', alignItems: 'center'}}>
-      <div style={{fontFamily: FONT.sans, fontWeight: 900, fontSize: size, color, whiteSpace: 'nowrap', transform: `translateX(${-(f - at) * speed}px)`}}>{text.repeat(8)}</div>
+      <div data-copy="free" style={{fontFamily: FONT.sans, fontWeight: 900, fontSize: size, color, whiteSpace: 'nowrap', transform: `translateX(${-(f - at) * speed}px)`}}>{text.repeat(8)}</div>
     </div>
   );
 };

@@ -20,7 +20,11 @@ export const PHud: React.FC<{color: string; label: string; bottom?: string}> = (
 
 export const Ground: React.FC<{color: string; children?: React.ReactNode}> = ({color, children}) => <AbsoluteFill style={{background: color}}>{children}</AbsoluteFill>;
 
-/** the style packs as data: name, colours (live from each pack's themed palette, so brand colours flow through) */
+/**
+ * Every style pack in src/ as data: name, colours (live from each pack's themed palette, so brand colours flow through).
+ * Copy that counts packs reads PACKS.length (tests/test_promo.py checks this list against the packs on disk), so adding
+ * a pack updates 「十套风格包」 and 「06 OF 10」 instead of leaving a stale number on screen.
+ */
 export const PACKS = [
   {key: 'film', zh: '电影', en: 'FILM', note: '叙事 · 人物', colors: [C.gold, C.teal, C.red], tint: '#F6E7C4'},
   {key: 'paper', zh: '手绘', en: 'PAPER', note: '流程 · 因果', colors: [P.blue, P.red, P.noteYellow], tint: '#F3EDE0'},
@@ -30,7 +34,18 @@ export const PACKS = [
   {key: 'pixel', zh: '像素', en: 'PIXEL', note: '轻松科普', colors: [PX.sky0, PX.grass, PX.dirt], tint: '#DDEFFC'},
   {key: 'math', zh: '数学', en: 'MATH', note: '公式 · 图像', colors: [M.blue, M.yellow, M.red], tint: '#E3E6F2'},
   {key: 'keynote', zh: '发布会', en: 'KEYNOTE', note: '产品演示', colors: [K.accent, K.green, K.ink], tint: '#EEECE8'},
+  {key: 'slides', zh: '讲台', en: 'SLIDES', note: '教程 · 步骤', colors: [C.tealDeep, C.orange, C.blue], tint: '#DDEEEA'},
+  {key: 'punch', zh: '快剪', en: 'PUNCH', note: '广告 · 短片', colors: [PU.hot, PU.sun, PU.sage], tint: '#F3F0E6'},
 ];
+
+const ZH = '零一二三四五六七八九';
+/** 10 → 「十」, 23 → 「二十三」: for counts in Chinese copy */
+export const zhNum = (n: number): string => (n < 10 ? ZH[n] : `${n >= 20 ? ZH[Math.floor(n / 10)] : ''}十${n % 10 ? ZH[n % 10] : ''}`);
+const EN = ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE'];
+/** 10 → "TEN" (digits past twelve) */
+export const enNum = (n: number) => EN[n] ?? String(n);
+/** 6 → "06" */
+export const pad2 = (n: number) => String(n).padStart(2, '0');
 
 /** a disc split into three wedges of a pack's colours, with a hole (200×200 box) */
 export const Swatch: React.FC<{colors: string[]; size: number; rot?: number; ring?: string}> = ({colors, size, rot = 0, ring = PU.paper}) => {

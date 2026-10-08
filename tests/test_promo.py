@@ -70,3 +70,39 @@ def test_scene_wavs_have_an_info_chunk():
     for f in list((ROOT / "public").rglob("*.wav")):
         head = f.read_bytes()[:96]
         assert b"LIST" in head, f"{f.relative_to(ROOT)} has no LIST chunk — write it with wav_bytes() (tools/kit.py)"
+
+
+def test_packs_list_matches_style_packs_on_disk():
+    """PACKS (src/promo/scenes/common.tsx) is what the promo counts and shows; it must be every pack in src/, no more"""
+    on_disk = {d.name for d in (ROOT / "src").iterdir() if (d / "index.tsx").exists() and re.search(rf"export const {d.name}: Look\b", (d / "index.tsx").read_text(encoding="utf-8"))}
+    listed = re.findall(r"\{key: '(\w+)'", (ROOT / "src" / "promo" / "scenes" / "common.tsx").read_text(encoding="utf-8"))
+    assert len(listed) == len(set(listed)), f"PACKS lists a pack twice: {listed}"
+    assert set(listed) == on_disk, f"PACKS is missing {sorted(on_disk - set(listed))}, or lists packs that do not exist {sorted(set(listed) - on_disk)}"
+
+
+COUNTS = re.compile(
+    r"[零一二两三四五六七八九十\d]+\s*套"  # 九套风格包
+    r"|\b\d+\s+OF\s+\d+\b"  # 06 OF 09
+    r"|\b(?:ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE)\s+(?:LOOKS|PACKS|STYLES)\b",
+    re.I,
+)
+
+
+def test_promo_copy_counts_come_from_data():
+    """a count typed into the copy goes stale the day a pack is added; derive it (PACKS.length, zhNum, enNum, pad2)"""
+    for f in sorted((ROOT / "src" / "promo" / "scenes").glob("*.tsx")):
+        code = re.sub(r"/\*.*?\*/|//[^\n]*", "", f.read_text(encoding="utf-8"), flags=re.S)
+        hits = [h for h in COUNTS.findall(code) if h != "一套"]  # 「挑一套风格」 is a choice, not a count
+        assert not hits, f"{f.name}: hard-coded count(s) {hits} — derive them from PACKS"
+
+
+def test_safe_area_and_cover_are_well_formed():
+    p = promo()
+    s = p.get("safe")
+    assert s, "promo.json needs a \"safe\" area (where the app's UI leaves the video visible)"
+    assert 0 <= s["top"] < s["bottom"] <= p["height"] and s["left"] + s["right"] < p["width"]
+    if "rail" in s:
+        assert s["left"] < s["rail"]["left"] < p["width"] - s["right"] and s["top"] <= s["rail"]["top"] < s["bottom"]
+    scene, cue = p["cover"].split(":")
+    sc = {x["id"]: x for x in p["scenes"]}
+    assert scene in sc and cue in sc[scene]["cues"], f"cover {p['cover']!r} is not a scene:cue of promo.json"

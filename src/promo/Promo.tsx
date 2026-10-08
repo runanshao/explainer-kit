@@ -3,14 +3,16 @@
  * it *finishes on the downbeat* (the cut lands with the kick). While a transition runs, the incoming scene is shown
  * frozen at its frame 0; the outgoing one keeps playing underneath. Audio: the scenes' <Sfx>; the score is mixed in
  * afterwards by tools/promo.mjs (tools/score.py + tools/master.py).
+ * With inputProps {probe: true} it also measures the copy against the platform safe area (src/core/probe.tsx).
  */
 import React from 'react';
 import {AbsoluteFill, Freeze, Sequence, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
+import {CopyProbe} from '../core/probe';
 import {Sfx, SfxMute, type SfxName} from '../core/Sfx';
 import {fontCss, useFonts} from '../core/fonts';
 import {EASE} from '../core/motion';
 import {FONT} from '../core/theme';
-import {PROMO, PromoSceneProvider, type PromoScene, preRoll, sceneLen, sceneStart} from './grid';
+import {PROMO, PromoSceneProvider, type PromoScene, SAFE, preRoll, sceneLen, sceneStart} from './grid';
 import {PROMO_SCENES} from './scenes';
 
 /** wave edge for the flood transition: y of the liquid surface across the frame at progress p */
@@ -59,7 +61,10 @@ const Missing: React.FC<{id: string}> = ({id}) => (
   </AbsoluteFill>
 );
 
-export const Promo: React.FC = () => {
+/** probe: measure the copy against the platform safe area and draw it (src/core/probe.tsx); review renders only */
+export type PromoProps = {probe?: boolean};
+
+export const Promo: React.FC<PromoProps> = ({probe}) => {
   useFonts();
   return (
     <AbsoluteFill style={{background: '#000', fontFamily: FONT.sans}}>
@@ -95,6 +100,7 @@ export const Promo: React.FC = () => {
           </React.Fragment>
         );
       })}
+      {probe ? <CopyProbe safe={SAFE} /> : null}
     </AbsoluteFill>
   );
 };

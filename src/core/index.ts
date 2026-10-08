@@ -9,4 +9,5 @@ export {SFX, Sfx, SfxAt, SfxMute, useBeat, type SfxName} from './Sfx';
 export {fontCss, useFonts} from './fonts';
 export {Tex} from './Tex';
 export {Burst, type BurstProps} from './Burst';
+export {CopyProbe, Free, type ProbeItem, type ProbeResult, type SafeArea} from './probe';
 export {CFG, FPS, WIDTH, HEIGHT} from '../config';

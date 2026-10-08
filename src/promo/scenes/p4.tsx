@@ -19,28 +19,28 @@ export const P4: React.FC = () => {
     <AbsoluteFill style={{background: PU.paper}}>
       <AbsoluteFill style={{transform: `scale(${push})`, transformOrigin: '50% 50%'}}>
         {col.map(({c, at}, i) => (
-          <div key={c} style={{position: 'absolute', left: 96, top: 300 + i * 400, height: 400, overflow: 'hidden'}}>
+          <div key={c} style={{position: 'absolute', left: 96, top: 260 + i * 380, height: 380, overflow: 'hidden'}}>
             <div style={{transform: `translateY(${(1 - tween(f, at, 9, 'expo')) * 110}%)`}}>
-              <PatternText tile={TILE} size={370}>
+              <PatternText tile={TILE} size={350}>
                 {c}
               </PatternText>
             </div>
           </div>
         ))}
-        <div style={{position: 'absolute', left: 608, top: 300, width: 4, height: 1200 * tween(f, cue('col') + 3, 14, 'expo'), background: PU.ink}} />
-        <div style={{position: 'absolute', left: 798, top: 418, width: 44, height: 44, borderRadius: 22, background: PU.hot, transform: `scale(${springAt(f, cue('say'), 'bouncy')})`}} />
+        <div style={{position: 'absolute', left: 608, top: 260, width: 4, height: 1140 * tween(f, cue('col') + 3, 14, 'expo'), background: PU.ink}} />
+        <div style={{position: 'absolute', left: 798, top: 378, width: 44, height: 44, borderRadius: 22, background: PU.hot, transform: `scale(${springAt(f, cue('say'), 'bouncy')})`}} />
         {say.map(({c, at}, i) => (
           <div
             key={i}
             style={{
               position: 'absolute',
               left: 750,
-              top: 520 + i * 150,
+              top: 480 + i * 140,
               width: 140,
               textAlign: 'center',
               fontFamily: FONT.sans,
               fontWeight: 900,
-              fontSize: 138,
+              fontSize: 128,
               lineHeight: 1,
               color: PU.ink,
               opacity: tween(f, at, 3),
@@ -50,7 +50,7 @@ export const P4: React.FC = () => {
             {c}
           </div>
         ))}
-        <Mono at={cue('tag')} size={30} color={PU.ink} style={{position: 'absolute', left: 72, top: 1580}}>
+        <Mono at={cue('tag')} size={30} color={PU.ink} style={{position: 'absolute', left: 96, top: 1420}}>
           GOOD FILMS SPEAK FOR THEMSELVES.
         </Mono>
       </AbsoluteFill>

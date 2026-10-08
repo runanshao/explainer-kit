@@ -30,19 +30,19 @@ export const P7: React.FC = () => {
         <Badge at={4} x={MARK.x} y={MARK.y} r={318} color={PU.ink} text="旁白就是时间轴 ● 每一帧都是纯函数 ● 可交付 · 可重复 · 稳定输出 ● " />
         <LogoReveal logo={LOGO} {...MARK} draw={-100} fill={0} landed={['play']} scale={pulse} />
         <Burst at={0} x={MARK.x} y={MARK.y} n={56} seed={9} width={1080} height={1920} colors={[PU.hot, PU.sun, PU.paper, PU.ink, PU.sky]} speed={[700, 1800]} life={[0.9, 1.5]} gravity={1500} />
-        <Wipe at={cue('word') - 6} dur={12} style={{position: 'absolute', left: 0, right: 0, top: 1090, textAlign: 'center'}}>
-          <div style={{fontFamily: FONT.sans, fontWeight: 900, fontSize: 132, lineHeight: 1, color: PU.ink, letterSpacing: '-0.03em'}}>{PROMO.brand.name}</div>
+        <Wipe at={cue('word') - 6} dur={12} style={{position: 'absolute', left: 0, right: 0, top: 1056, textAlign: 'center'}}>
+          <div style={{fontFamily: FONT.sans, fontWeight: 900, fontSize: 116, lineHeight: 1, color: PU.ink, letterSpacing: '-0.03em'}}>{PROMO.brand.name}</div>
         </Wipe>
         <div
           style={{
             position: 'absolute',
             left: 0,
             right: 0,
-            top: 1262,
+            top: 1196,
             textAlign: 'center',
             fontFamily: FONT.sans,
             fontWeight: 700,
-            fontSize: 64,
+            fontSize: 60,
             color: PU.ink,
             opacity: tween(f, cue('tag'), 8),
             transform: `translateY(${(1 - tween(f, cue('tag'), 10, 'expo')) * 40}px)`,
@@ -50,10 +50,10 @@ export const P7: React.FC = () => {
         >
           {PROMO.brand.tagline}
         </div>
-        <Mono at={cue('cta') + 4} size={28} color={PU.ink} style={{position: 'absolute', right: 72, top: 1440}}>
+        <Mono at={cue('cta') + 4} size={28} color={PU.ink} style={{position: 'absolute', left: 0, right: 0, top: 1440, textAlign: 'center'}}>
           OPEN SOURCE · MIT
         </Mono>
-        <CtaBar at={cue('cta')} y={1500} text={`${PROMO.brand.cta}  →  `} size={58} />
+        <CtaBar at={cue('cta')} y={1290} height={130} text={`${PROMO.brand.cta}  →  `} size={52} />
       </AbsoluteFill>
       <AbsoluteFill style={{background: '#fff', opacity: flash}} />
       <PHud color={PU.ink} label="[07] GET IT" />

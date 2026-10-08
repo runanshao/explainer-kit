@@ -6,7 +6,9 @@
 // 2. sources      pytest: script.json ↔ timings.json ↔ audio ↔ scene registry ↔ sound library, parser rules
 // 3. every scene  renders at its start, middle and end in every format (a missing cue/word throws here, not mid-render)
 // 4. determinism  the same frames rendered twice are byte-identical (no Math.random, no clock, no leftover state)
-// 5. promo        the beat-timed promo (promo/promo.json) renders on every cue → out/verify/promo.png
+// 5. promo        the beat-timed promo (promo/promo.json) as it will be watched: frame 0 carries a hook, and on frame 0,
+//                 every cue once settled, the cover and the last frame, all copy sits inside the platform safe area
+//                 (promo.json "safe", measured by src/core/probe.tsx) → out/verify/promo.png, transitions included
 // 6. promo det.   two promo frames rendered twice are byte-identical
 // Writes out/verify/*.png for a look; exits non-zero on the first failing stage.
 import {spawnSync} from 'node:child_process';
@@ -15,7 +17,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {renderStill, selectComposition} from '@remotion/renderer';
 import {CFG, IDS, browserExecutable, leadOf, narrEnd, open, root, starts} from './timeline.mjs';
-import {PROMO, cueAbs, total as promoTotal} from './promo-grid.mjs';
+import {PROMO, cueAbs, reviewSpots, total as promoTotal} from './promo-grid.mjs';
+import {openProbe, problems} from './promo-probe.mjs';
 
 const quick = process.argv.includes('--quick');
 const outDir = path.join(root, 'out/verify');
@@ -99,18 +102,23 @@ if (!quick) {
     await renderStill({composition: promo.composition, serveUrl: promo.serveUrl, output, frame: fr, scale: 0.25, browserExecutable});
     return output;
   };
-  await stage('5 promo renders on every cue', async () => {
-    const spots = [
-      ...PROMO.scenes.flatMap((s) => Object.keys(s.cues).map((k) => [`${s.id}:${k}`, Math.min(promoTotal - 1, cueAbs(s.id, k) + 2)])),
-      ['end', promoTotal - 1],
-    ];
+  await stage('5 promo reads on a phone', async () => {
+    const spots = reviewSpots();
+    const probe = await openProbe();
     const tiles = [];
-    for (const [label, fr] of spots) tiles.push(`${await promoFrame(fr, path.join(outDir, `promo_${String(fr).padStart(4, '0')}.png`))}|${label}`);
+    const found = [];
+    for (const sp of spots) {
+      const png = path.join(outDir, `promo_${String(sp.frame).padStart(4, '0')}.png`);
+      const p = problems(sp, await probe(sp.frame, png));
+      for (const x of p) found.push(`${sp.label} (frame ${sp.frame}): ${x}`);
+      tiles.push(`${png}|${p.length ? '✖ ' : ''}${sp.label} ${sp.frame}`);
+    }
     // no shell here: the "file|label" arguments contain a pipe
     const r = spawnSync(py, [path.join(root, 'tools/tile.py'), path.join(outDir, 'promo.png'), '8', ...tiles], {encoding: 'utf8'});
     if (r.status !== 0) throw new Error(`tile.py failed: ${r.stderr}`);
     for (const f of new Set(tiles.map((t) => t.split('|')[0]))) fs.rmSync(f);
-    return `${spots.length} frames → out/verify/promo.png`;
+    if (found.length) throw new Error(`${found.length} problem(s), outlined in out/verify/promo.png:\n    ${found.join('\n    ')}`);
+    return `${spots.length} frames, copy inside the safe area → out/verify/promo.png`;
   });
   await stage('6 promo determinism', async () => {
     const first = PROMO.scenes[0];

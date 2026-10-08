@@ -54,7 +54,7 @@ python tools/audio-report.py out/Promo-mixed.mp4 --promo --target -14  # 短片
 ## 看短片
 
 ```bash
-node tools/promo-sheet.mjs        # 每个 cue 后 4 帧一格；OFF=0 看重拍那一帧
+node tools/promo-sheet.mjs        # 第 0 帧、每个 cue 定住后、转场中点、封面各一格；遮挡区涂红，出安全区的字框红
 node tools/promo-sheet.mjs 230 236 239 243   # 指定帧，看一段动作（比如轮播停没停住）
 ```
 
